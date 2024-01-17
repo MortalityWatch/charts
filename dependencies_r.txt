@@ -21,3 +21,6 @@ readxl
 httr
 jsonlite
 xml2
+sp
+sf
+ggpmisc
