@@ -324,3 +324,53 @@ cum <- ts |>
 cum$is_cumulative <- TRUE
 
 ts <- bind_rows(ts, cum)
+
+# Spatial Data
+germany <- st_read(
+  dsn = "./data_static/gadm41_DEU.gpkg",
+  layer = "ADM_ADM_2"
+)
+
+germany_2 <- st_read(
+  dsn = "./data_static/gadm41_DEU.gpkg", layer = "ADM_ADM_2"
+) |> filter(NAME_1 == "Sachsen")
+germany_3 <- st_read(
+  dsn = "./data_static/gadm41_DEU.gpkg", layer = "ADM_ADM_3"
+) |>
+  filter(NAME_1 == "Sachsen") |>
+  mutate(id = CC_3)
+germany_4 <- st_read(
+  dsn = "./data_static/gadm41_DEU.gpkg", layer = "ADM_ADM_4"
+) |>
+  filter(NAME_1 == "Sachsen") |>
+  mutate(id = paste0(left(CC_4, 5), right(CC_4, 3)))
+
+# Update "holes" in 4th layer geo, using geos from 3rd layer geo.
+# Leipzig
+germany_4$geom[germany_4$id == "14729370"] <-
+  germany_3$geom[germany_3$id == "147295310"]
+# Meißen
+germany_4$geom[germany_4$id == "14627290"] <-
+  germany_3$geom[germany_3$id == "146275241"]
+# Bautzen
+germany_4$geom[germany_4$id == "14625250"] <-
+  germany_3$geom[germany_3$id == "146255216"]
+germany_4$geom[germany_4$id == "14625200"] <-
+  germany_3$geom[germany_3$id == "146255213"]
+# Mittelsachsen
+germany_4$id[germany_4$id == "14522450"] <- "14522275"
+germany_4$geom[germany_4$id == "14522275"] <-
+  germany_3$geom[germany_3$id == "145225123"]
+germany_4$geom[germany_4$id == "14522275"] <-
+  germany_3$geom[germany_3$id == "145225123"]
+to_merge <- germany_3 |> filter(id %in% c("145220370", "145220080"))
+germany_4$geom[germany_4$id == "14522080"] <- st_union(to_merge$geom)
+# Erzgebirgkreis
+to_merge <- germany_4 |> filter(id %in% c("14521460", "14521470"))
+germany_4$geom[germany_4$id == "14521460"] <- st_union(to_merge$geom)
+germany_4$id[germany_4$id == "14521030"] <- "14521035"
+to_merge <- germany_4 |> filter(id %in% c("14521035", "14521050"))
+germany_4$geom[germany_4$id == "14521035"] <- st_union(to_merge$geom)
+
+# Calculate area
+germany_4 <- germany_4 |> mutate(area = st_area(geom))

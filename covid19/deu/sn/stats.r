@@ -10,17 +10,8 @@ stats_excess_munis <- function(y, l) {
     "Sign Excess: ", n_munis_sign_excess, " (", as_pct(sign_excess_p), ")"
   ))
 
-
-  a <- munis_sign_excess |>
-    group_by(id) |>
-    summarize(cmr = sum(cmr), cmr_baseline = sum(cmr_baseline)) |>
-    mutate(cmr_excess_p = cmr / cmr_baseline - 1)
-
-  b <- munis_no_sign_excess |>
-    group_by(id) |>
-    summarize(cmr = sum(cmr), cmr_baseline = sum(cmr_baseline)) |>
-    mutate(cmr_excess_p = cmr / cmr_baseline - 1)
-
+  a <- munis_sign_excess
+  b <- munis_no_sign_excess
   if (nrow(a) > 1) {
     a_ci <- t.test(a$cmr_excess_p, conf.level = 0.95)$conf.int
 

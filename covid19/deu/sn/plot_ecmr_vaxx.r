@@ -17,18 +17,11 @@ make_chart <- function(y, by_dose) {
       summarize(count = sum(count))
   }
 
-  county_excess <- ts |>
-    filter(level == 5, date %in% y, ) |>
-    group_by(id, jurisdiction) |>
-    summarize(
-      has_sign_excess = any(cmr_excess_sign, na.rm = TRUE),
-      cmr = sum(cmr),
-      cmr_baseline = sum(cmr_baseline)
-    ) |>
-    mutate(
-      cmr_excess = cmr - cmr_baseline,
-      cmr_excess_p = (cmr / cmr_baseline) - 1
-    )
+  if (is.vector(y)) {
+    county_excess <- ts |> filter(level == 5, is_cumulative == TRUE)
+  } else {
+    county_excess <- ts |> filter(level == 5, date == y)
+  }
 
   pop <- ts |>
     filter(level == 5, date %in% y) |>
@@ -37,7 +30,10 @@ make_chart <- function(y, by_dose) {
     summarize(population = mean(population))
 
   ts_plot <- county_excess |> inner_join(
-    vaxx |> inner_join(pop) |> mutate(vaxxed = count / population)
+    vaxx |>
+      inner_join(pop, by = join_by(id)) |>
+      mutate(vaxxed = count / population),
+    by = join_by(id)
   )
 
   chart <- ggplot(ts_plot, aes(x = vaxxed, y = cmr_excess_p)) +
@@ -79,7 +75,7 @@ save_chart(
   upload = FALSE
 )
 save_chart(
-  make_chart(c(2021:2022), FALSE),
+  make_chart(y = c(2021:2022), by_dose = FALSE),
   "deu/sn/vaccine/ecmr_2021_2022",
   upload = FALSE
 )
