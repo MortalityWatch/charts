@@ -149,6 +149,31 @@ make_scatter_plot <- function(df_plot, extra_subtitle = NULL) {
   } else {
     paste("Source: statistik.sachsen.de/genonline", extra_subtitle, sep = " · ")
   }
+  ggplot(df_plot, aes(x = date, y = cmr)) +
+    geom_point() +
+    facet_wrap(~ reorder(level_name, level), scales = "free") +
+    labs(
+      title = paste0(
+        "Crude Mortality Rate [Saxony, Germany]"
+      ),
+      subtitle = st,
+      x = "Calendar Year",
+      y = "Deaths/100k population"
+    ) +
+    theme_bw() +
+    scale_x_continuous(breaks = unique(ts$date)) +
+    theme(legend.position = "top") +
+    theme(legend.title = element_blank()) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5)) +
+    geom_hline(yintercept = 0, linewidth = 0.5)
+}
+
+make_rel_scatter_plot <- function(df_plot, extra_subtitle = NULL) {
+  st <- if (is.null(extra_subtitle)) {
+    "Source: statistik.sachsen.de/genonline"
+  } else {
+    paste("Source: statistik.sachsen.de/genonline", extra_subtitle, sep = " · ")
+  }
   ggplot(df_plot, aes(x = date, y = cmr_excess_p)) +
     geom_point() +
     facet_wrap(~ reorder(level_name, level), scales = "free") +

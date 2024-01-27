@@ -1,8 +1,10 @@
 # Scatter Plots
+chart <- make_scatter_plot(ts |> filter(date >= 2010))
+save_chart(chart, "deu/sn/scatter_cmr_all", upload = FALSE)
 
 ## All regions
-chart <- make_scatter_plot(ts |> filter(date >= 2010))
-save_chart(chart, "deu/sn/scatter_all", upload = FALSE)
+chart <- make_rel_scatter_plot(ts |> filter(date >= 2010))
+save_chart(chart, "deu/sn/scatter_ecmr_all", upload = FALSE)
 
 ## All munis w/ sign. excess
 ts_plot <- ts |> filter(
@@ -10,7 +12,7 @@ ts_plot <- ts |> filter(
   date >= 2010,
   any(cmr_excess_sign, na.rm = TRUE)
 )
-chart <- make_scatter_plot(
+chart <- make_rel_scatter_plot(
   ts_plot,
   paste(
     "Jurisdictions with any sign. excess ('20-'22)",
@@ -18,7 +20,7 @@ chart <- make_scatter_plot(
     sep = SEP
   )
 )
-save_chart(chart, "deu/sn/muni/scatter/cmr_excess_sign", upload = FALSE)
+save_chart(chart, "deu/sn/muni/scatter/ecmr_sign", upload = FALSE)
 
 ## All munis w/o sign. excess
 ts_plot <- ts |> filter(
@@ -26,7 +28,7 @@ ts_plot <- ts |> filter(
   date >= 2010,
   !any(cmr_excess_sign, na.rm = TRUE)
 )
-chart <- make_scatter_plot(
+chart <- make_rel_scatter_plot(
   ts_plot,
   paste(
     "Jurisdictions without any sign. excess ('20-'22)",
@@ -34,12 +36,12 @@ chart <- make_scatter_plot(
     sep = SEP
   )
 )
-save_chart(chart, "deu/sn/muni/scatter/cmr_no_excess_sign", upload = FALSE)
+save_chart(chart, "deu/sn/muni/scatter/ecmr_no_sign", upload = FALSE)
 
 ## All munis w sign. excess in all years
 all_excess <- ts |> filter(level == 8, cmr_excess_sign_all == TRUE)
 ts_plot <- ts |> filter(date >= 2010, id %in% all_excess$id)
-chart <- make_scatter_plot(
+chart <- make_rel_scatter_plot(
   ts_plot,
   paste(
     "Jurisdictions with all years sign. excess ('20-'22)",
@@ -48,7 +50,7 @@ chart <- make_scatter_plot(
   )
 )
 
-save_chart(chart, "deu/sn/muni/scatter/cmr_excess_sign_all", upload = FALSE)
+save_chart(chart, "deu/sn/muni/scatter/ecmr_sign_all", upload = FALSE)
 
 # Excess vs population size
 make_chart <- function(df, split_by_sign_excess) {
@@ -136,4 +138,8 @@ ts_plot <- ts |>
 chart <- make_chart(df = ts_plot, FALSE)
 save_chart(chart, "deu/sn/muni/scatter/cmr_population_density", upload = FALSE)
 chart <- make_chart(ts_plot, TRUE)
-save_chart(chart, "deu/sn/muni/scatter/cmr_population_density_sign", upload = FALSE)
+save_chart(
+  chart,
+  "deu/sn/muni/scatter/cmr_population_density_sign",
+  upload = FALSE
+)
