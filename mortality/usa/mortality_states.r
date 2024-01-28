@@ -95,7 +95,7 @@ deaths_monthly$n_age_groups <- 9
 rm(md_usa_10y)
 
 ## Yearly
-deaths_yearly <- read_remote("deaths/usa/yearly_10y_completed.csv") |>
+deaths_yearly <- read_remote("deaths/usa/yearly_10y.csv") |>
   aggregate_80_plus() |>
   filter(age_group != "all") |>
   mutate(date = as.Date(paste0(date, "-01-01")))
