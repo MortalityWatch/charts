@@ -62,6 +62,11 @@ for (j in c("usa", "usa_state")) {
 result_5y <- df_result |>
   distinct(iso3c, date, age_group, .keep_all = TRUE) |>
   mutate(age_group = ifelse(age_group == "95-100", "95+", age_group))
+all <- result_5y |>
+  group_by(iso3c, date, year, month) |>
+  summarise(deaths = sum(deaths), .groups = "drop") |>
+  mutate(age_group = "all")
+result_5y <- rbind(all, result_5y) |> arrange(iso3c, date, age_group)
 
 missing <- result_5y |>
   complete(iso3c, date, age_group) |>

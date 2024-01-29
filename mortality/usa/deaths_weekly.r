@@ -58,9 +58,15 @@ for (j in c("usa", "usa_state")) {
     df_result <- rbind(df_result, df)
   }
 }
+
 result_5y <- df_result |>
   distinct(iso3c, date, age_group, .keep_all = TRUE) |>
   mutate(age_group = ifelse(age_group == "95-100", "95+", age_group))
+all <- result_5y |>
+  group_by(iso3c, date, year, week) |>
+  summarise(deaths = sum(deaths), .groups = "drop") |>
+  mutate(age_group = "all")
+result_5y <- rbind(all, result_5y) |> arrange(iso3c, date, age_group)
 
 missing <- result_5y |>
   complete(iso3c, date, age_group) |>
@@ -89,7 +95,8 @@ result_10y <- result_5y |>
       age_group %in% c("80-84") ~ "80-89",
       age_group %in% c("85-89") ~ "80-89",
       age_group %in% c("90-94") ~ "90+",
-      age_group %in% c("95+") ~ "90+"
+      age_group %in% c("95+") ~ "90+",
+      age_group == "all" ~ "all"
     )
   ) |>
   group_by(iso3c, date, age_group, year, week) |>
@@ -107,7 +114,8 @@ result_20y <- result_10y |>
       age_group %in% c("60-69") ~ "60-79",
       age_group %in% c("70-79") ~ "60-79",
       age_group %in% c("80-89") ~ "80+",
-      age_group %in% c("90+") ~ "80+"
+      age_group %in% c("90+") ~ "80+",
+      age_group == "all" ~ "all"
     )
   ) |>
   group_by(iso3c, date, age_group, year, week) |>
