@@ -2,6 +2,7 @@ source("lib/common.r")
 
 df_monthly_5y <- read_remote("deaths/usa/monthly_5y.csv")
 df_monthly_10y <- read_remote("deaths/usa/monthly_10y.csv")
+df_monthly_20y <- read_remote("deaths/usa/monthly_20y.csv")
 
 max_year <- max(df_monthly_5y$year)
 years <- df_monthly_5y |>
@@ -24,7 +25,13 @@ result_10y <- df_monthly_10y |>
   group_by(iso3c, age_group, year) |>
   summarize(deaths = sum(deaths))
 
-save_csv(result_10y, "deaths/usa/yearly_10y")
+result_20y <- df_monthly_20y |>
+  filter(year <= last_complete_year) |>
+  group_by(iso3c, age_group, year) |>
+  summarize(deaths = sum(deaths))
+
 save_csv(result_5y, "deaths/usa/yearly_5y")
+save_csv(result_10y, "deaths/usa/yearly_10y")
+save_csv(result_20y, "deaths/usa/yearly_20y")
 
 # source("mortality/usa/deaths_yearly.r")

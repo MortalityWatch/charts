@@ -45,10 +45,11 @@ five_year_age_groups <- c(
 )
 
 df_result <- tibble()
+y <- "2018_n"
 for (j in c("usa", "usa_state")) {
   df_all <- get_csv(j, y, "all")
   for (ag in five_year_age_groups) {
-    df <- get_csv(j, "2018_n", ag) |>
+    df <- get_csv(j, y, ag) |>
       inner_join(df_all |> select(iso3c, year, week, deaths),
         by = join_by(iso3c, year, week)
       ) |>
@@ -125,4 +126,4 @@ save_csv(
   "deaths/usa/weekly_20y"
 )
 
-# source("./mortality/usa/deaths_weekly2.r")
+# source("./mortality/usa/deaths_weekly.r")
