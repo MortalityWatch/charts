@@ -1,48 +1,11 @@
 source("lib/common.r")
 
-# Define default functions
-select <- dplyr::select
-filter <- dplyr::filter
-mutate <- dplyr::mutate
-group_by <- dplyr::group_by
-ungroup <- dplyr::ungroup
-summarise <- dplyr::summarise
-inner_join <- dplyr::inner_join
-relocate <- dplyr::relocate
-year <- lubridate::year
-month <- lubridate::month
-week <- lubridate::week
-days <- lubridate::days
-days_in_month <- lubridate::days_in_month
-as_tibble <- tibble::as_tibble
-tibble <- tibble::tibble
-as_tsibble <- tsibble::as_tsibble
-str_replace <- stringr::str_replace
-uncount <- tidyr::uncount
-sym <- rlang::sym
-model <- fabletools::model
-date <- lubridate::date
-forecast <- fabletools::forecast
-select <- dplyr::select
-all_of <- dplyr::all_of
-nest <- tidyr::nest
-unnest <- tidyr::unnest
-.data <- dplyr::.data
-yearmonth <- tsibble::yearmonth
-yearweek <- tsibble::yearweek
-ggplot <- ggplot2::ggplot
-make_yearmonth <- tsibble::make_yearmonth
-arrange <- dplyr::arrange
-distinct <- dplyr::distinct
-complete <- tidyr::complete
-case_when <- dplyr::case_when
-
 # Weekly 2015+
 wd_usa <- read_remote("deaths/usa/deaths_weekly.csv") |>
   mutate(date = date_parse(paste(year, week, 1), format = "%G %V %u")) |>
   filter(!is.na(deaths))
 
-md_usa_10y <- read_remote("deaths/usa/monthly_10y_imputed.csv") |>
+md_usa_10y <- read_remote("deaths/usa/monthly_10y.csv") |>
   mutate(date = date_parse(paste(year, month, 1), format = "%Y %m %d")) |>
   aggregate_80_plus()
 
@@ -69,21 +32,7 @@ rm(dd_us1, dd_us2)
 
 # ASMR
 ## Weekly
-gapped_states_weekly <- wd_usa |>
-  filter(age_group != "NS") |>
-  group_by(.data$iso3c, .data$age_group) |>
-  group_modify(~ as_tsibble(.x, index = date) |> has_gaps(), .keep = TRUE) |>
-  ungroup() |>
-  filter(.gaps == TRUE)
-complete_states_weekly <- setdiff(
-  unique(wd_usa$iso3c),
-  unique(gapped_states_weekly$iso3c)
-)
-
-deaths_weekly <- wd_usa |>
-  filter(
-    iso3c %in% complete_states_weekly, age_group != "all", !is.na(date)
-  )
+deaths_weekly <- wd_usa |> filter(age_group != "all", !is.na(date))
 deaths_weekly$type <- 3
 deaths_weekly$n_age_groups <- 6
 
@@ -94,23 +43,14 @@ deaths_monthly$n_age_groups <- 9
 
 rm(md_usa_10y)
 
-## Yearly
-deaths_yearly <- read_remote("deaths/usa/yearly_10y.csv") |>
-  aggregate_80_plus() |>
-  filter(age_group != "all") |>
-  mutate(date = as.Date(paste0(date, "-01-01")))
-deaths_yearly$type <- 1
-deaths_yearly$n_age_groups <- 9
-
 cols <- c("iso3c", "date", "age_group", "type", "n_age_groups", "deaths")
 dd_us_age <- rbind(
   deaths_weekly |> select(all_of(cols)),
-  deaths_monthly |> select(all_of(cols)),
-  deaths_yearly |> select(all_of(cols))
+  deaths_monthly |> select(all_of(cols))
 ) |>
   arrange(iso3c, date, age_group, type, age_group)
 
-rm(deaths_weekly, deaths_monthly, complete_states_weekly)
+rm(deaths_weekly, deaths_monthly)
 
 # Population
 population <- read_remote("population/usa/10y.csv") |>
