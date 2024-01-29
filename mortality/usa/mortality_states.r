@@ -11,14 +11,14 @@ md_usa_10y <- read_remote("deaths/usa/monthly_10y.csv") |>
 
 # CMR, Weekly
 dd_us1 <- wd_usa |>
-  filter(age_group == "all") |>
+  filter(!age_group %in% c("all", "NS")) |>
   select(iso3c, date, deaths)
 dd_us1$age_group <- "all"
 dd_us1$type <- 3
 
 # CMR, Monthly
 dd_us2 <- md_usa_10y |>
-  filter(age_group == "all") |>
+  filter(!age_group %in% c("all", "NS")) |>
   select(iso3c, date, deaths)
 dd_us2$age_group <- "all"
 dd_us2$type <- 2
@@ -124,3 +124,5 @@ usa_mortality_states$source <- "cdc"
 rm(dd_us, dd_us_age, population, population2)
 
 # source("mortality/usa/mortality_states.r")
+
+usa_mortality_states |> filter(iso3c == "USA-WY")
