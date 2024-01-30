@@ -1,30 +1,9 @@
 source("lib/common.r")
 
-data1 <- as_tibble(read.csv("./data_static/usa_states_excess_weekly.csv"))
-data2 <- as_tibble(read.csv("./data_static/usa_states_age_weekly.csv"))
+data <- as_tibble(read.csv("./data_static/usa_states_age_weekly.csv"))
 us_states_iso3c <- as_tibble(read.csv("./data_static/usa_states_iso3c.csv"))
 
-df1 <- data1 |>
-  filter(Type == "Predicted (weighted)", Outcome == "All causes") |>
-  select("State", "Week.Ending.Date", "Year", "Observed.Number") |>
-  setNames(c("jurisdiction", "date", "year", "deaths")) |>
-  mutate(
-    date = yearweek(ymd(date)),
-    age_group = "all",
-    deaths = as.integer(str_replace(deaths, ",", ""))
-  ) |>
-  select(-"year")
-
-# Combine NY/NYC
-ny <- df1 |>
-  filter(jurisdiction %in% c("New York", "New York City")) |>
-  group_by(date, age_group) |>
-  summarise(deaths = sum(deaths)) |>
-  ungroup()
-ny$jurisdiction <- "New York"
-df1 <- rbind(df1 |> filter(jurisdiction != "New York"), ny)
-
-df2 <- data2 |>
+df <- data |>
   filter(Type == "Unweighted") |>
   select(Jurisdiction, Week.Ending.Date, Age.Group, Number.of.Deaths) |>
   setNames(c("jurisdiction", "date", "age_group", "deaths")) |>
@@ -39,28 +18,31 @@ df2 <- data2 |>
       age_group == "75-84 years" ~ "75-84",
       age_group == "85 years and older" ~ "85+"
     )
-  )
+  ) |>
+  complete(jurisdiction, date, age_group)
 
 # Combine NY/NYC
-ny <- df2 |>
+ny <- df |>
   filter(jurisdiction %in% c("New York", "New York City")) |>
   group_by(date, age_group) |>
   summarise(deaths = sum(deaths)) |>
   ungroup()
 ny$jurisdiction <- "New York"
-df2 <- rbind(df2 |> filter(jurisdiction != "New York"), ny)
-
-df3 <- df2 |> filter(jurisdiction == "United States", age_group == "85+")
-df3$age_group <- "NS"
-df3$deaths <- NA
-
-df <- rbind(df1, df2, df3)
+df <- rbind(df |> filter(jurisdiction != "New York"), ny)
 
 result_1 <- df |>
   left_join(us_states_iso3c, by = "jurisdiction") |>
   select(-"jurisdiction") |>
   mutate(year = year(date), week = isoweek(date)) |>
   arrange(iso3c, date, age_group)
+
+# Jurisdictions with suppressed data pre 2018
+suppressed <- result_1 |> filter(
+  age_group != "all",
+  date <= make_yearweek(2018, 1),
+  is.na(deaths)
+)
+supressed_jur <- unique(suppressed$iso3c)
 
 # Continue dataset after 10/2023 via CDC Wonder
 df_weekly_5y <- read_remote("deaths/usa/weekly_5y.csv")
@@ -86,7 +68,8 @@ result_2 <- df_weekly_5y |>
       age_group %in% c("80-84") ~ "75-84",
       age_group %in% c("85-89") ~ "85+",
       age_group %in% c("90-94") ~ "85+",
-      age_group %in% c("95+") ~ "85+"
+      age_group %in% c("95+") ~ "85+",
+      .default = age_group
     )
   ) |>
   group_by(iso3c, date, age_group, year, week) |>
@@ -94,20 +77,21 @@ result_2 <- df_weekly_5y |>
   mutate(date = yearweek(date))
 
 # Join Result & Save
-date_2017 <- make_yearweek(year = 2017, week = 1)
-date_2023 <- make_yearweek(year = 2023, week = 1)
+date_2018 <- make_yearweek(year = 2018, week = 1)
 
 result_1_all <- result_1 |>
-  filter(date < date_2017) |>
   group_by(across(c(-age_group, -deaths))) |>
   summarise(deaths = sum(deaths, na.rm = TRUE)) |>
   ungroup()
 result_1_all$age_group <- "all"
 
 result <- rbind(
-  result_1 |> filter(date < date_2023),
+  # Weekly all ages 2017+
   result_1_all,
-  result_2 |> filter(date >= date_2023)
+  # Weekly, complete 2017+
+  result_1 |> filter(!iso3c %in% supressed_jur, date < date_2018),
+  # All from CDC Wonder weekly 2018+
+  result_2 |> filter(date >= date_2018, age_group != "NS")
 ) |>
   filter(age_group != "NS") |>
   relocate(iso3c, date, year, week, age_group, deaths) |>
@@ -132,4 +116,4 @@ save_csv(
   upload = TRUE
 )
 
-# source("mortality/usa/deaths_weekly_cdc.r")
+# source("mortality/usa/deaths_weekly_25y_20y_10y.r")

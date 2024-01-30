@@ -1,7 +1,7 @@
 source("lib/common.r")
 
 # Weekly 2015+
-wd_usa <- read_remote("deaths/usa/deaths_weekly.csv") |>
+wd_usa <- read_remote("deaths/usa/deaths_weekly_25y_20y_10y.csv") |>
   mutate(date = date_parse(paste(year, week, 1), format = "%G %V %u")) |>
   filter(!is.na(deaths))
 
