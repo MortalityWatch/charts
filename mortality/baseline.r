@@ -1,7 +1,7 @@
 source("lib/common.r")
 source("lib/parallel.r")
 
-min_bl_len <- 3
+min_bl_len <- 4
 max_bl_len <- 10
 forecast_len <- 4
 min_data_len <- min_bl_len + forecast_len
