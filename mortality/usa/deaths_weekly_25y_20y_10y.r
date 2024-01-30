@@ -87,7 +87,7 @@ result_1_all$age_group <- "all"
 
 result <- rbind(
   # Weekly all ages 2017+
-  result_1_all,
+  result_1_all |> filter(date < date_2018),
   # Weekly, complete 2017+
   result_1 |> filter(!iso3c %in% supressed_jur, date < date_2018),
   # All from CDC Wonder weekly 2018+

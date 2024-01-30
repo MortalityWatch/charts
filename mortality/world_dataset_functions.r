@@ -184,27 +184,17 @@ calculate_baseline <- function(ts, col_name, chart_type) {
   bl_size <- round(get_baseline_length(iso, chart_type, col_name) * multiplier)
   col <- sym(col_name)
 
-  # Not enough rows, return
-  if (sum(!is.na(ts[col_name])) <= bl_size) {
-    ts <- ts |> mutate(
-      "{col_name}_baseline" := NA,
-      "{col_name}_baseline_lower" := NA,
-      "{col_name}_baseline_upper" := NA,
-      "{col_name}_excess" := NA,
-      "{col_name}_excess_lower" := NA,
-      "{col_name}_excess_upper" := NA,
-      .after = all_of(col)
-    )
-
-    return(ts)
-  }
-
   forecast_interval <- round(4 * multiplier)
 
   if (chart_type %in% c("yearly", "fluseason", "midyear")) {
     df <- ts |> filter(date < 2020)
   } else {
     df <- ts |> filter(year(date) < 2020)
+  }
+
+  # Not enough rows, return
+  if (sum(!is.na(df[col_name])) <= bl_size) {
+    return(df)
   }
 
   bl_data <- tail(df, bl_size)
