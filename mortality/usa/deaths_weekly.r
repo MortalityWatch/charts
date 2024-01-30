@@ -48,7 +48,7 @@ df_result <- tibble()
 y <- "2018_n"
 for (j in c("usa", "usa_state")) {
   df_all <- get_csv(j, y, "all")
-  for (ag in five_year_age_groups) {
+  for (ag in c(five_year_age_groups, "all", "NS")) {
     df <- get_csv(j, y, ag) |>
       inner_join(df_all |> select(iso3c, year, week, deaths),
         by = join_by(iso3c, year, week)
@@ -96,7 +96,7 @@ result_10y <- result_5y |>
       age_group %in% c("85-89") ~ "80-89",
       age_group %in% c("90-94") ~ "90+",
       age_group %in% c("95+") ~ "90+",
-      age_group == "all" ~ "all"
+      .default = age_group
     )
   ) |>
   group_by(iso3c, date, age_group, year, week) |>
@@ -115,7 +115,7 @@ result_20y <- result_10y |>
       age_group %in% c("70-79") ~ "60-79",
       age_group %in% c("80-89") ~ "80+",
       age_group %in% c("90+") ~ "80+",
-      age_group == "all" ~ "all"
+      .default = age_group
     )
   ) |>
   group_by(iso3c, date, age_group, year, week) |>
@@ -130,7 +130,7 @@ save_csv(
   "deaths/usa/weekly_10y"
 )
 save_csv(
-  result_10y |> arrange(iso3c, year, week, age_group),
+  result_20y |> arrange(iso3c, year, week, age_group),
   "deaths/usa/weekly_20y"
 )
 
