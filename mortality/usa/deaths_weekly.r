@@ -7,7 +7,8 @@ parse_data <- function(df, jurisdiction_column, age_group) {
       week = as.numeric(right(`MMWR Week Code`, 2))
     ) |>
     filter(!is.na(year), !is.na(week), week != 99) |>
-    mutate(date = make_yearweek(year, week), Deaths = as.integer(Deaths))
+    rowwise() |>
+    mutate(date = make_yearweek(year, week), Deaths = as_integer(Deaths))
   if (nchar(jurisdiction_column) == 0) {
     df <- df |>
       select("date", "year", "week", "Deaths") |>
