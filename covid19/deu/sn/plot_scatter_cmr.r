@@ -143,3 +143,145 @@ save_chart(
   "deu/sn/muni/scatter/cmr_population_density_sign",
   upload = FALSE
 )
+
+# AVG CMR pre-pandemic vs pandemic by muni
+make_chart <- function(year, split_by_sign_excess) {
+  a <- ts |>
+    filter(date %in% c(2010:2019), level == 8) |>
+    group_by(id) |>
+    summarize(a = mean(cmr))
+  b <- ts |>
+    filter(date %in% year, level == 8) |>
+    group_by(id) |>
+    summarize(b = mean(cmr), cmr_excess_sign = any(cmr_excess_sign))
+
+  ts_plot <- a |> inner_join(b)
+
+  if (split_by_sign_excess) {
+    chart <- ggplot(ts_plot, aes(x = a, y = b, color = cmr_excess_sign))
+  } else {
+    chart <- ggplot(ts_plot, aes(x = a, y = b))
+  }
+  chart +
+    geom_point() +
+    labs(
+      title = "Pre-Pandemic Mean CMR vs. Pandemic CMR [Saxony, Germany]", ,
+      subtitle = paste0(year, collapse = ", "),
+      x = "Mean CMR 2010-2019 (Deaths/100k)",
+      y = paste0("Mean CMR ", paste0(year, collapse = ", "), " (Deaths/100k)")
+    ) +
+    theme_bw() +
+    theme(legend.position = "top") +
+    geom_hline(yintercept = 0, linewidth = 0.5) +
+    scale_color_manual(values = c("#44781d", "#de5075")) +
+    stat_correlation(use_label(c("R", "P", "n", "method"))) +
+    stat_poly_line() +
+    xlim(0, max(max(a$a), max(b$b))) +
+    ylim(0, max(max(a$a), max(b$b))) +
+    geom_abline(intercept = 0, slope = 1, lty = "dashed")
+}
+
+for (sign in c(TRUE, FALSE)) {
+  save_chart(
+    make_chart(year = c(2020), sign),
+    paste0(
+      "deu/sn/muni/scatter/cmr_pandemic_cmr_prepandemic_2020",
+      ifelse(sign, "_sign", "")
+    ),
+    upload = FALSE
+  )
+  save_chart(
+    make_chart(year = c(2021), sign),
+    paste0(
+      "deu/sn/muni/scatter/cmr_pandemic_cmr_prepandemic_2021",
+      ifelse(sign, "_sign", "")
+    ),
+    upload = FALSE
+  )
+  save_chart(
+    make_chart(year = c(2022), sign),
+    paste0(
+      "deu/sn/muni/scatter/cmr_pandemic_cmr_prepandemic_2022",
+      ifelse(sign, "_sign", "")
+    ),
+    upload = FALSE
+  )
+  save_chart(
+    make_chart(year = c(2020:2022), sign),
+    paste0(
+      "deu/sn/muni/scatter/cmr_pandemic_cmr_prepandemic_2020:2022",
+      ifelse(sign, "_sign", "")
+    ),
+    upload = FALSE
+  )
+}
+
+# AVG CMR pre-pandemic vs pandemic by muni
+make_chart <- function(year, split_by_sign_excess) {
+  a <- ts |>
+    filter(date %in% c(2010:2019), level == 8) |>
+    group_by(id) |>
+    summarize(a = mean(cmr))
+  b <- ts |>
+    filter(date %in% year, level == 8) |>
+    group_by(id) |>
+    summarize(b = mean(cmr_excess_p), cmr_excess_sign = any(cmr_excess_sign))
+
+  ts_plot <- a |> inner_join(b)
+
+  if (split_by_sign_excess) {
+    chart <- ggplot(ts_plot, aes(x = a, y = b, color = cmr_excess_sign))
+  } else {
+    chart <- ggplot(ts_plot, aes(x = a, y = b))
+  }
+  chart +
+    geom_point() +
+    labs(
+      title = "Pre-Pandemic Mean CMR vs. Pandemic eCMR [Saxony, Germany]",
+      subtitle = paste0(year, collapse = ", "),
+      x = "Mean CMR 2010-2019 (Deaths/100k)",
+      y = paste0("Mean eCMR ", paste0(year, collapse = ", "), " (Deaths/100k)")
+    ) +
+    theme_bw() +
+    theme(legend.position = "top") +
+    geom_hline(yintercept = 0, linewidth = 0.5) +
+    scale_color_manual(values = c("#44781d", "#de5075")) +
+    stat_correlation(use_label(c("R", "P", "n", "method"))) +
+    stat_poly_line() +
+    scale_y_continuous(labels = scales::percent_format())
+}
+
+for (sign in c(TRUE, FALSE)) {
+  save_chart(
+    make_chart(year = c(2020), sign),
+    paste0(
+      "deu/sn/muni/scatter/ecmr_pandemic_cmr_prepandemic_2020",
+      ifelse(sign, "_sign", "")
+    ),
+    upload = FALSE
+  )
+  save_chart(
+    make_chart(year = c(2021), sign),
+    paste0(
+      "deu/sn/muni/scatter/ecmr_pandemic_cmr_prepandemic_2021",
+      ifelse(sign, "_sign", "")
+    ),
+    upload = FALSE
+  )
+  save_chart(
+    make_chart(year = c(2022), sign),
+    paste0(
+      "deu/sn/muni/scatter/ecmr_pandemic_cmr_prepandemic_2022",
+      ifelse(sign, "_sign", "")
+    ),
+    upload = FALSE
+  )
+  save_chart(
+    make_chart(year = c(2020:2022), sign),
+    paste0(
+      "deu/sn/muni/scatter/ecmr_pandemic_cmr_prepandemic_2020:2022",
+      ifelse(sign, "_sign", "")
+    ),
+    upload = FALSE
+  )
+}
