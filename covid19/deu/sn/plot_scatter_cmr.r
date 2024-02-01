@@ -145,7 +145,7 @@ save_chart(
 )
 
 # AVG CMR pre-pandemic vs pandemic by muni
-make_chart <- function(year, split_by_sign_excess) {
+make_chart <- function(year, split_by_sign_excess = FALSE) {
   a <- ts |>
     filter(date %in% c(2010:2019), level == 8) |>
     group_by(id) |>
@@ -181,43 +181,29 @@ make_chart <- function(year, split_by_sign_excess) {
     geom_abline(intercept = 0, slope = 1, lty = "dashed")
 }
 
-for (sign in c(TRUE, FALSE)) {
-  save_chart(
-    make_chart(year = c(2020), sign),
-    paste0(
-      "deu/sn/muni/scatter/cmr_pandemic_cmr_prepandemic_2020",
-      ifelse(sign, "_sign", "")
-    ),
-    upload = FALSE
-  )
-  save_chart(
-    make_chart(year = c(2021), sign),
-    paste0(
-      "deu/sn/muni/scatter/cmr_pandemic_cmr_prepandemic_2021",
-      ifelse(sign, "_sign", "")
-    ),
-    upload = FALSE
-  )
-  save_chart(
-    make_chart(year = c(2022), sign),
-    paste0(
-      "deu/sn/muni/scatter/cmr_pandemic_cmr_prepandemic_2022",
-      ifelse(sign, "_sign", "")
-    ),
-    upload = FALSE
-  )
-  save_chart(
-    make_chart(year = c(2020:2022), sign),
-    paste0(
-      "deu/sn/muni/scatter/cmr_pandemic_cmr_prepandemic_2020:2022",
-      ifelse(sign, "_sign", "")
-    ),
-    upload = FALSE
-  )
-}
+save_chart(
+  make_chart(year = c(2020)),
+  "deu/sn/muni/scatter/cmr_pandemic_cmr_prepandemic_2020",
+  upload = FALSE
+)
+save_chart(
+  make_chart(year = c(2021)),
+  "deu/sn/muni/scatter/cmr_pandemic_cmr_prepandemic_2021",
+  upload = FALSE
+)
+save_chart(
+  make_chart(year = c(2022)),
+  "deu/sn/muni/scatter/cmr_pandemic_cmr_prepandemic_2022",
+  upload = FALSE
+)
+save_chart(
+  make_chart(year = c(2020:2022)),
+  "deu/sn/muni/scatter/cmr_pandemic_cmr_prepandemic_2020:2022",
+  upload = FALSE
+)
 
 # AVG CMR pre-pandemic vs pandemic by muni
-make_chart <- function(year, split_by_sign_excess) {
+make_chart <- function(year, split_by_sign_excess = FALSE) {
   a <- ts |>
     filter(date %in% c(2010:2019), level == 8) |>
     group_by(id) |>
@@ -251,37 +237,23 @@ make_chart <- function(year, split_by_sign_excess) {
     scale_y_continuous(labels = scales::percent_format())
 }
 
-for (sign in c(TRUE, FALSE)) {
-  save_chart(
-    make_chart(year = c(2020), sign),
-    paste0(
-      "deu/sn/muni/scatter/ecmr_pandemic_cmr_prepandemic_2020",
-      ifelse(sign, "_sign", "")
-    ),
-    upload = FALSE
-  )
-  save_chart(
-    make_chart(year = c(2021), sign),
-    paste0(
-      "deu/sn/muni/scatter/ecmr_pandemic_cmr_prepandemic_2021",
-      ifelse(sign, "_sign", "")
-    ),
-    upload = FALSE
-  )
-  save_chart(
-    make_chart(year = c(2022), sign),
-    paste0(
-      "deu/sn/muni/scatter/ecmr_pandemic_cmr_prepandemic_2022",
-      ifelse(sign, "_sign", "")
-    ),
-    upload = FALSE
-  )
-  save_chart(
-    make_chart(year = c(2020:2022), sign),
-    paste0(
-      "deu/sn/muni/scatter/ecmr_pandemic_cmr_prepandemic_2020:2022",
-      ifelse(sign, "_sign", "")
-    ),
-    upload = FALSE
-  )
-}
+save_chart(
+  make_chart(year = c(2020)),
+  "deu/sn/muni/scatter/ecmr_pandemic_cmr_prepandemic_2020",
+  upload = FALSE
+)
+save_chart(
+  make_chart(year = c(2021)),
+  "deu/sn/muni/scatter/ecmr_pandemic_cmr_prepandemic_2021",
+  upload = FALSE
+)
+save_chart(
+  make_chart(year = c(2022)),
+  "deu/sn/muni/scatter/ecmr_pandemic_cmr_prepandemic_2022",
+  upload = FALSE
+)
+save_chart(
+  make_chart(year = c(2020:2022)),
+  "deu/sn/muni/scatter/ecmr_pandemic_cmr_prepandemic_2020:2022",
+  upload = FALSE
+)
