@@ -73,17 +73,20 @@ process_country <- function(iso3c) {
   data <- read_remote(paste0("mortality/", iso3c, "/yearly.csv"))
   print(iso3c)
   yearly <- data |>
+    filter(source != "un") |>
     get_baseline_size(iso3c) |>
     mutate(chart_type = "yearly", .after = "iso3c")
 
   data <- read_remote(paste0("mortality/", iso3c, "/fluseason.csv"))
   fluseason <- data |>
+    filter(source != "un") |>
     mutate(date = as.integer(left(date, 4))) |>
     get_baseline_size(iso3c) |>
     mutate(chart_type = "fluseason", .after = "iso3c")
 
   data <- read_remote(paste0("mortality/", iso3c, "/midyear.csv"))
   midyear <- data |>
+    filter(source != "un") |>
     mutate(date = as.integer(left(date, 4))) |>
     get_baseline_size(iso3c) |>
     mutate(chart_type = "midyear", .after = "iso3c")

@@ -194,7 +194,7 @@ calculate_baseline <- function(ts, col_name, chart_type) {
 
   # Not enough rows, return
   if (sum(!is.na(df[col_name])) <= bl_size) {
-    return(df)
+    return(ts)
   }
 
   bl_data <- tail(df, bl_size)
