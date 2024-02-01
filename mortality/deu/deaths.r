@@ -54,5 +54,5 @@ len <- nrow(df |> filter(
   week == w
 ))
 
-save_csv(df, paste0("deaths/deu/Tote_", y, "_", w), upload = TRUE)
-save_csv(df, paste0("deaths/deu/deaths"), upload = TRUE)
+save_csv(df, paste0("deaths/deu/Tote_", y, "_", sprintf("%02d", w)))
+save_csv(df, paste0("deaths/deu/deaths"))
