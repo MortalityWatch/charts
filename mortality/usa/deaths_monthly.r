@@ -48,12 +48,26 @@ df_result <- tibble()
 for (j in c("usa", "usa_state")) {
   for (y in c("1999_2020", "2018_n")) {
     df_all <- get_csv(j, y, "all")
-    for (ag in c(five_year_age_groups, "all", "NS")) {
+    # First calculate NS
+    df_ns <- get_csv(j, y, "NS") |>
+      inner_join(df_all |> select(iso3c, date, deaths),
+        by = join_by(iso3c, date)
+      ) |>
+      mutate(deaths = deaths.y - deaths.x) |>
+      select(-deaths.x, -deaths.y)
+    df_result <- rbind(df_result, df_all, df_ns)
+
+    # Then all age_groups
+    for (ag in c(five_year_age_groups)) {
       df <- get_csv(j, y, ag) |>
         inner_join(df_all |> select(iso3c, date, deaths),
           by = join_by(iso3c, date)
         ) |>
-        mutate(deaths = deaths.y - deaths.x) |>
+        inner_join(df_ns |> select(iso3c, date, deaths),
+          by = join_by(iso3c, date)
+        ) |>
+        # all - NS - (all but ag)
+        mutate(deaths = deaths.y - deaths - deaths.x) |>
         select(-deaths.x, -deaths.y)
       df_result <- rbind(df_result, df)
     }
@@ -61,12 +75,8 @@ for (j in c("usa", "usa_state")) {
 }
 result_5y <- df_result |>
   distinct(iso3c, date, age_group, .keep_all = TRUE) |>
-  mutate(age_group = ifelse(age_group == "95-100", "95+", age_group))
-all <- result_5y |>
-  group_by(iso3c, date, year, month) |>
-  summarise(deaths = sum(deaths), .groups = "drop") |>
-  mutate(age_group = "all")
-result_5y <- rbind(all, result_5y) |> arrange(iso3c, date, age_group)
+  mutate(age_group = ifelse(age_group == "95-100", "95+", age_group)) |>
+  arrange(iso3c, date, age_group)
 
 missing <- result_5y |>
   complete(iso3c, date, age_group) |>
