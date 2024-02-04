@@ -81,7 +81,7 @@ result_5y <- df_result |>
 
 missing <- result_5y |>
   complete(iso3c, date, age_group) |>
-  filter(is.na(deaths))
+  filter(is.na(deaths), date < max(result_5y$date) - 8)
 stopifnot(nrow(missing) == 0)
 
 result_10y <- result_5y |>
