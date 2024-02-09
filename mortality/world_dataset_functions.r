@@ -192,9 +192,8 @@ calculate_baseline <- function(ts, col_name, chart_type) {
     df <- ts |> filter(year(date) < 2020)
   }
 
-  # Not enough rows, return
-  if (sum(!is.na(df[col_name])) <= bl_size) {
-    return(ts)
+  if (sum(!is.na(df[col_name])) < bl_size) {
+    return(ts) # Not enough rows, return
   }
 
   bl_data <- tail(df, bl_size)
