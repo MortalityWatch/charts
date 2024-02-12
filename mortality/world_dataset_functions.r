@@ -184,7 +184,7 @@ calculate_baseline <- function(ts, col_name, chart_type) {
   bl_size <- round(get_baseline_length(iso, chart_type, col_name) * multiplier)
   col <- sym(col_name)
 
-  forecast_interval <- round(4 * multiplier)
+  forecast_interval <- round(5 * multiplier)
 
   if (chart_type %in% c("yearly", "fluseason", "midyear")) {
     df <- ts |> filter(date < 2020)
