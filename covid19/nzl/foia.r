@@ -31,6 +31,7 @@ df <- data |>
   ) |>
   filter(!is.na(date), !is.na(age_group))
 
+# Plot
 df2 <- df |>
   group_by(date, vaccinated) |>
   summarize(deaths = sum(deaths, na.rm = TRUE)) |>
@@ -49,7 +50,7 @@ chart <- df2 |>
     y = "Deaths",
     fill = "COVID-19 vaccinated"
   ) +
-  scale_fill_manual(values = c("#44781d", "#4366ad")) +
+  scale_fill_manual(values = c("#44781d", "#de5075")) +
   theme_bw() +
   theme(axis.text.x = element_text(
     angle = 30, hjust = 0.5, vjust = 0.5
@@ -63,6 +64,65 @@ chart <- df2 |>
   theme(legend.title = element_blank()) +
   watermark()
 save_chart(chart, "nzl/all-cause-vaxx-status-1", upload = FALSE)
+
+# Plot
+df2 <- df |>
+  group_by(date, vaccinated) |>
+  summarize(deaths = sum(deaths, na.rm = TRUE)) |>
+  mutate(vaccinated = ifelse(vaccinated, "vaccinated", "unvaccinated"))
+
+owid <- as_tibble(read.csv("./data/owid.csv")) |>
+  select(iso_code, date, people_vaccinated_per_hundred) |>
+  setNames(c("iso3c", "date", "dose_pct")) |>
+  filter(iso3c == "NZL") |>
+  mutate(
+    dose_pct = dose_pct / 100,
+    date = as.Date(date)
+  ) |>
+  filter(!is.na(dose_pct)) |>
+  mutate(date = yearmonth(date)) |>
+  group_by(date) |>
+  summarize(dose_pct = mean(dose_pct))
+
+a <- df2 |> inner_join(owid, by = c("date"))
+a$population <- 5123000
+mr <- a |>
+  mutate(population = ifelse(
+    vaccinated == "unvaccinated",
+    (1 - dose_pct) * population,
+    dose_pct * population
+  )) |>
+  mutate(cmr = deaths / population * 100000)
+
+chart <-
+  mr |>
+  filter(date <= make_yearmonth(year = 2023, month = 11)) |>
+  ggplot(aes(x = date, y = cmr)) +
+  geom_line(aes(color = vaccinated)) +
+  scale_color_manual(values = c("#44781d", "#de5075")) +
+  labs(
+    title = paste0(
+      "All-Cause Mortality by COVID-19 Vaccination Status [New Zealand]"
+    ),
+    subtitle = "Source: FYI.org.nz; OWID",
+    x = "Month of Year",
+    y = "Deaths/100k population",
+    fill = "COVID-19 vaccinated"
+  ) +
+  scale_fill_manual(values = c("#44781d", "#de5075")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(
+    angle = 30, hjust = 0.5, vjust = 0.5
+  )) +
+  scale_y_continuous(labels = comma) +
+  scale_x_yearmonth(breaks = seq(as.Date("2019-01-01"),
+    as.Date("2023-12-01"),
+    by = "6 months"
+  )) +
+  theme(legend.position = "top") +
+  theme(legend.title = element_blank()) +
+  watermark()
+save_chart(chart, "nzl/all-cause-mr-vaxx-status-1", upload = FALSE)
 
 # Stacked Chart
 df2 <- df |>
@@ -85,7 +145,7 @@ chart <- df2 |>
     y = "Deaths",
     fill = "COVID-19 vaccinated"
   ) +
-  scale_fill_manual(values = c("#44781d", "#4366ad")) +
+  scale_fill_manual(values = c("#44781d", "#de5075")) +
   theme_bw() +
   theme(axis.text.x = element_text(
     angle = 30, hjust = 0.5, vjust = 0.5
@@ -93,7 +153,7 @@ chart <- df2 |>
   scale_y_continuous(labels = comma) +
   scale_x_yearmonth(breaks = seq(as.Date("2019-01-01"),
     as.Date("2023-12-01"),
-    by = "6 months"
+    by = "12 months"
   )) +
   theme(legend.position = "top") +
   theme(legend.title = element_blank()) +
@@ -130,7 +190,7 @@ chart <- df2 |>
     y = "Deaths",
     fill = "COVID-19 vaccinated"
   ) +
-  scale_fill_manual(values = c("#44781d", "#4366ad")) +
+  scale_fill_manual(values = c("#44781d", "#de5075")) +
   theme_bw() +
   theme(axis.text.x = element_text(
     angle = 30, hjust = 0.5, vjust = 0.5
