@@ -9,7 +9,8 @@ urls <- list(
   c(
     paste0(
       "https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Bevoelkerung/",
-      "Sterbefaelle-Lebenserwartung/Tabellen/sonderauswertung-sterbefaelle",
+      "Sterbefaelle-Lebenserwartung/Publikationen/Downloads-Sterbefaelle/",
+      "statistischer-bericht-sterbefaelle-tage-wochen-monate-aktuell-5126109",
       ".xlsx?__blob=publicationFile"
     ),
     "sonderauswertung-sterbefaelle.xlsx"

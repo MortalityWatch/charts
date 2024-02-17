@@ -3,7 +3,11 @@ options(timeout = 600)
 
 urls <- list(
   c(
-    "https://raw.githubusercontent.com/robert-koch-institut/COVID-19-Impfungen_in_Deutschland/main/Archiv/2022-09-05_Deutschland_Landkreise_COVID-19-Impfungen.csv",
+    paste0(
+      "https://raw.githubusercontent.com/robert-koch-institut/",
+      "COVID-19-Impfungen_in_Deutschland/main/Archiv/",
+      "2022-09-05_Deutschland_Landkreise_COVID-19-Impfungen.csv"
+    ),
     "covid19_deu_vaccinations.csv"
   ),
   c(
@@ -73,8 +77,9 @@ urls <- list(
   c(
     paste0(
       "https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Bevoelkerung/",
-      "Sterbefaelle-Lebenserwartung/Tabellen/sonderauswertung-",
-      "sterbefaelle-endgueltige-daten.xlsx?__blob=publicationFile"
+      "Sterbefaelle-Lebenserwartung/Publikationen/Downloads-Sterbefaelle/",
+      "statistischer-bericht-sterbefaelle-tage-wochen-monate-endg-5126108",
+      ".xlsx?__blob=publicationFile"
     ),
     "sonderauswertung-sterbefaelle-endgueltige-daten.xlsx"
   ),
