@@ -2,14 +2,17 @@ source("lib/common.r")
 
 parse_data <- function(df, jurisdiction_column, age_group) {
   df <- df |>
+    as_tibble() |>
+    rowwise() |>
     mutate(
-      year = as.numeric(left(`Month Code`, 4)),
-      month = as.numeric(right(`Month Code`, 2))
+      deaths = as_integer(Deaths),
+      year = as_integer(left(`Month.Code`, 4)),
+      month = as_integer(right(`Month.Code`, 2))
     ) |>
     mutate(date = make_yearmonth(year, month))
   if (nchar(jurisdiction_column) == 0) {
     df <- df |>
-      select("date", "year", "month", "Deaths") |>
+      select("date", "year", "month", "deaths") |>
       setNames(c("date", "year", "month", "deaths"))
     df$iso3c <- "USA"
     df |>
@@ -18,7 +21,7 @@ parse_data <- function(df, jurisdiction_column, age_group) {
       mutate(age_group = gsub("_", "-", age_group), .after = date)
   } else {
     df |>
-      select(!!jurisdiction_column, "date", "year", "month", "Deaths") |>
+      select(!!jurisdiction_column, "date", "year", "month", "deaths") |>
       setNames(c("jurisdiction", "date", "year", "month", "deaths")) |>
       left_join(us_states_iso3c, by = "jurisdiction") |>
       filter(!is.na(iso3c), !is.na(date)) |>
@@ -30,8 +33,8 @@ parse_data <- function(df, jurisdiction_column, age_group) {
 get_csv <- function(j, y, a) {
   type <- ifelse(y == "2018_n", "_month", "")
   parse_data(
-    read_csv(paste0("../wonder_dl/out/", j, type, "_", a, "_", y, ".csv")),
-    ifelse(j == "usa", "", ifelse(y == "2018_n", "Residence State", "State")),
+    read.csv(paste0("../wonder_dl/out/", j, type, "_", a, "_", y, ".csv")),
+    ifelse(j == "usa", "", ifelse(y == "2018_n", "Residence.State", "State")),
     a
   )
 }
@@ -78,7 +81,8 @@ result_5y <- df_result |>
   mutate(age_group = ifelse(age_group == "95-100", "95+", age_group)) |>
   arrange(iso3c, date, age_group)
 
-missing <- result_5y |>
+missing <- df |>
+  filter(year <= max(df$year - 2)) |>
   complete(iso3c, date, age_group) |>
   filter(is.na(deaths))
 
