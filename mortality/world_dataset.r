@@ -38,7 +38,7 @@ if (Sys.getenv("STAGE") != "") {
   data <- data |> filter(iso3c %in% c("USA", "SWE", "JPN", "DEU", "AFG"))
 }
 if (Sys.getenv("ISO3C") != "") {
-  data <- data |> filter(iso3c == Sys.getenv("ISO3C"))
+  data <- data |> filter(str_detect(iso3c, Sys.getenv("ISO3C")))
 }
 
 # Country names are saved in meta data.
