@@ -258,7 +258,7 @@ all_deaths_v <- df |>
   group_by(date) |>
   summarize(deaths = sum(deaths, na.rm = TRUE))
 
-all_deaths_v |>
+chart <- all_deaths_v |>
   inner_join(all_deaths, by = c("date")) |>
   mutate(diff = deaths.y - deaths.x) |>
   as_tsibble(index = date) |>
@@ -268,3 +268,5 @@ all_deaths_v |>
     x = "",
     y = ""
   )
+
+save_chart(chart, "nzl/all-cause-vaxx-status-dataset_diff", upload = FALSE)
