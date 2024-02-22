@@ -1,34 +1,5 @@
 source("lib/common.r")
 
-# Define default functions
-select <- dplyr::select
-filter <- dplyr::filter
-mutate <- dplyr::mutate
-group_by <- dplyr::group_by
-ungroup <- dplyr::ungroup
-summarise <- dplyr::summarise
-inner_join <- dplyr::inner_join
-relocate <- dplyr::relocate
-year <- lubridate::year
-month <- lubridate::month
-week <- lubridate::week
-days <- lubridate::days
-days_in_month <- lubridate::days_in_month
-as_tibble <- tibble::as_tibble
-tibble <- tibble::tibble
-as_tsibble <- tsibble::as_tsibble
-str_replace <- stringr::str_replace
-uncount <- tidyr::uncount
-sym <- rlang::sym
-model <- fabletools::model
-date <- lubridate::date
-forecast <- fabletools::forecast
-select <- dplyr::select
-all_of <- dplyr::all_of
-nest <- tidyr::nest
-unnest <- tidyr::unnest
-.data <- dplyr::.data
-
 # Helper Functions:
 ## Splits an age group string by its start and end year.
 split_age_group <- function(age_group) {
