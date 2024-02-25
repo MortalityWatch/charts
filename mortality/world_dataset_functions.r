@@ -48,6 +48,7 @@ aggregate_data <- function(data, type) {
         asmr_esp = round(sum_if_not_empty(.data$asmr_esp), digits = 1),
         asmr_usa = round(sum_if_not_empty(.data$asmr_usa), digits = 1),
         asmr_country = round(sum_if_not_empty(.data$asmr_country), digits = 1),
+        source_asmr = toString(unique(.data$source)),
         .groups = "drop"
       )
   }

@@ -69,8 +69,10 @@ process_country <- function(df) {
     dd_asmr <- dd_age |>
       group_by(iso3c, type, n_age_groups, source) |>
       group_modify(~ calculate_asmr_variants(.x), .keep = TRUE) |>
+      mutate(max_date = max(date)) |>
       ungroup() |>
       filter(type == max(type), .by = c(iso3c, date)) |>
+      filter(max_date == max(max_date), .by = c(iso3c, date)) |>
       filter(n_age_groups == max(n_age_groups), .by = c(iso3c, date)) |>
       distinct(iso3c, date, .keep_all = TRUE) |>
       arrange(date, type)
