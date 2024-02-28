@@ -410,6 +410,18 @@ as_integer <- function(num) {
   }
 }
 
+is_double <- function(num) {
+  grepl("^[0-9]+.[0-9]+$", num)
+}
+
+as_double <- function(num) {
+  if (is_double(num)) {
+    as.double(num)
+  } else {
+    NA
+  }
+}
+
 aggregate_80_plus <- function(df) {
   df |>
     mutate(

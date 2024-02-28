@@ -15,9 +15,10 @@ mortgage_rate <- read.csv(
 ) |>
   setNames(c("date", "rate")) |>
   as_tibble() |>
+  rowwise() |>
   mutate(
     date = as.Date(date),
-    rate = rate / 100
+    rate = as_double(rate) / 100
   ) |>
   mutate(
     date = make_yearweek(year = year(date), week = week(date))
