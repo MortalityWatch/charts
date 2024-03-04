@@ -179,8 +179,10 @@ save_chart(chart, "nzl/all-cause-mr-vaxx-status-1", upload = FALSE)
 # Stacked Chart
 df2 <- df |>
   group_by(date, vaccinated, age_group) |>
-  summarize(deaths = sum(deaths, na.rm = TRUE)) |>
+  summarize(deaths = as.integer(sum(deaths, na.rm = TRUE))) |>
   mutate(vaccinated = ifelse(vaccinated, "vaccinated", "unvaccinated"))
+
+save_csv(df2, "nzl/deaths_vaccinated", upload = FALSE)
 
 df2$age_group <- factor(df2$age_group, levels = order)
 chart <- df2 |>

@@ -294,19 +294,19 @@ get_daily_from_n <- function(wd, columns, ex_columns, fun) { # nolint
   df |> select(-ncol(df))
 }
 
-get_daily_from_weekly <- function(wd, columns, ex_columns = c()) {
+get_daily_from_weekly <- function(wd, columns = c(), ex_columns = c()) {
   get_daily_from_n(wd, columns, ex_columns, fun = function(date) {
     7
   })
 }
 
-get_daily_from_monthly <- function(wd, columns, ex_columns = c()) {
+get_daily_from_monthly <- function(wd, columns = c(), ex_columns = c()) {
   get_daily_from_n(wd, columns, ex_columns, fun = function(date) {
     days_in_month(date)
   })
 }
 
-get_daily_from_yearly <- function(wd, columns, ex_columns = c()) {
+get_daily_from_yearly <- function(wd, columns = c(), ex_columns = c()) {
   get_daily_from_n(wd, columns, ex_columns, fun = function(date) {
     y <- year(date)
     x <- lubridate::interval(paste0(y, "-01-01"), paste0(y, "-12-31"))
