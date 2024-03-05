@@ -121,11 +121,22 @@ get_disaggregated_vaccinated <- function(x) {
   }
   result
 
-  # Sample Chart
+  # # Sample Chart
   # disaggregated_df |>
   #   ggplot(aes(x = age, y = value)) +
   #   geom_point() +
-  #   geom_point(data = result, aes(x = age, y = value), color = "red")
+  #   geom_point(data = result, aes(x = age, y = value), color = "red") +
+  #   labs(
+  #     title = paste0(
+  #       "COVID-19 Vaccinations by Single Ages - 2022-05-11 [New Zealand]"
+  #     ),
+  #     subtitle = paste("Black: Naively disaggregated",
+  #       "Disaggregated along loess spline (totals per group remain stable)",
+  #       sep = " · "
+  #     ),
+  #     x = "Year of Age",
+  #     y = "Vaccinations"
+  #   )
 }
 
 reaggregated_df <- df |>

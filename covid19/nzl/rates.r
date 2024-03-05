@@ -56,7 +56,7 @@ chart <-
     title = paste0(
       "All-Cause Mortality by COVID-19 Vaccination Status [New Zealand]"
     ),
-    subtitle = "Source: infoshare.nl, mortality.watch",
+    subtitle = "usmortality.substack.com",
     x = "Month of Year",
     y = "Deaths/100k population",
     fill = "COVID-19 vaccinated"
@@ -72,7 +72,6 @@ chart <-
   )) +
   theme(legend.position = "top") +
   theme(legend.title = element_blank()) +
-  watermark() +
   facet_wrap(~age_group, scales = "free")
 
 save_chart(chart, "nzl/acm_age_vaxx", upload = FALSE)
@@ -89,7 +88,8 @@ df <- tibble()
 for (offset in -4:4) {
   x <- deaths |>
     inner_join(population) |>
-    mutate(!!paste0("cmr_", offset) := deaths / get(paste0("population_", offset)) * 100000)
+    mutate(!!paste0("cmr_", offset) :=
+      deaths / get(paste0("population_", offset)) * 100000)
   if (nrow(df) == 0) {
     df <- x
   } else {
@@ -114,16 +114,44 @@ df3 <- df2 |>
   mutate(offset = str_extract(offset, "-?\\d+"))
 
 chart <- df3 |>
+  filter(offset == 0) |>
+  ggplot(aes(x = date, y = asmr, color = type)) +
+  geom_line(linewidth = 1.5) +
+  scale_color_manual(values = c("#44781d", "#de5075")) +
+  labs(
+    title = paste0(
+      "All-Cause ASMR by COVID-19 Vaccination Status [New Zealand]"
+    ),
+    subtitle = "usmortality.substack.com",
+    x = "Month of Year",
+    y = "Deaths/100k population",
+    fill = "COVID-19 vaccinated"
+  ) +
+  theme_bw() +
+  theme(axis.text.x = element_text(
+    angle = 30, hjust = 0.5, vjust = 0.5
+  )) +
+  scale_y_continuous(labels = comma) +
+  scale_x_yearmonth(breaks = seq(as.Date("2019-01-01"),
+    as.Date("2023-12-01"),
+    by = "6 months"
+  )) +
+  theme(legend.position = "top") +
+  theme(legend.title = element_blank()) +
+  watermark()
+
+save_chart(chart, "nzl/asmr_vaxx", upload = FALSE)
+
+chart <- df3 |>
   filter(offset == 0, date >= make_yearmonth(2022, 1)) |>
   ggplot(aes(x = date, y = asmr, fill = type)) +
   geom_col(position = "dodge") +
-  # geom_line(linewidth = 1) +
   scale_fill_manual(values = c("#44781d", "#de5075")) +
   labs(
     title = paste0(
       "All-Cause ASMR by COVID-19 Vaccination Status [New Zealand]"
     ),
-    subtitle = "Source: cbs.nl, mortality.watch",
+    subtitle = "usmortality.substack.com",
     x = "Month of Year",
     y = "Deaths/100k population",
     fill = "COVID-19 vaccinated"
@@ -142,7 +170,7 @@ chart <- df3 |>
   watermark() +
   coord_cartesian(ylim = c(0, 100))
 
-save_chart(chart, "nzl/asmr_vaxx", upload = FALSE)
+save_chart(chart, "nzl/asmr_vaxx_bar", upload = FALSE)
 
 # ASMR with week offset
 chart <- df3 |>
@@ -158,7 +186,7 @@ chart <- df3 |>
     title = paste0(
       "All-Cause ASMR by COVID-19 Vaccination Status [New Zealand]"
     ),
-    subtitle = "Source: cbs.nl, mortality.watch",
+    subtitle = "usmortality.substack.com",
     x = "Month of Year",
     y = "Deaths/100k population",
     fill = "COVID-19 vaccinated"
@@ -184,7 +212,7 @@ deaths |>
   mutate(date = year(date)) |>
   group_by(date, age_group) |>
   summarize(deaths = sum(deaths)) |>
-  mutate(deaths_pct = deaths / sum(deaths)) |>
+  mutate(deaths_pct = round(deaths / sum(deaths), 2)) |>
   filter(date == 2022)
 
 # ASMR Mean/CI
@@ -202,7 +230,7 @@ t_test_result <- t.test(
 )
 p_value <- t_test_result$p.value
 p_value_annotation <- sprintf("p-value: %.4f", p_value)
-ggplot(mean_ci_by_type, aes(x = type, y = mean, fill = type)) +
+chart <- ggplot(mean_ci_by_type, aes(x = type, y = mean, fill = type)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_errorbar(
     aes(ymin = ci_lower, ymax = ci_upper),
@@ -218,7 +246,7 @@ ggplot(mean_ci_by_type, aes(x = type, y = mean, fill = type)) +
     title = paste0(
       "All-Cause ASMR by COVID-19 Vaccination Status [New Zealand]"
     ),
-    subtitle = "Jan 2022 - Apr 2023 · Source: cbs.nl",
+    subtitle = "Jan 2022 - Apr 2023 · Source: usmortality.substack.com",
     x = "Vaccination Status",
     y = "Deaths/100k population",
     fill = "COVID-19 vaccinated"
@@ -230,9 +258,10 @@ ggplot(mean_ci_by_type, aes(x = type, y = mean, fill = type)) +
     aes(label = round(mean, 1)),
     position = position_stack(vjust = 0.5), color = "black"
   )
+save_chart(chart, "nzl/asmr_vaxx_mean_ci", upload = FALSE)
 
 # Cumulatively
-df3 %>%
+chart <- df3 %>%
   filter(offset == 0, date >= make_yearmonth(2022, 1)) |>
   group_by(type) |>
   mutate(asmr = cumsum(asmr)) |>
@@ -243,7 +272,7 @@ df3 %>%
     title = paste0(
       "All-Cause Mortality by COVID-19 Vaccination Status [New Zealand]"
     ),
-    subtitle = "Source: infoshare.nl, mortality.watch",
+    subtitle = "usmortality.substack.com",
     x = "Month of Year",
     y = "Deaths/100k population",
     fill = "COVID-19 vaccinated"
@@ -260,3 +289,4 @@ df3 %>%
   theme(legend.position = "top") +
   theme(legend.title = element_blank()) +
   watermark()
+save_chart(chart, "nzl/asmr_vaxx_cum", upload = FALSE)
