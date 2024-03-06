@@ -270,7 +270,7 @@ chart <- df3 %>%
   scale_color_manual(values = c("#44781d", "#de5075")) +
   labs(
     title = paste0(
-      "All-Cause Mortality by COVID-19 Vaccination Status [New Zealand]"
+      "Cumulative All-Cause Mortality by COVID-19 Vaccination Status [New Zealand]"
     ),
     subtitle = "usmortality.substack.com",
     x = "Month of Year",
