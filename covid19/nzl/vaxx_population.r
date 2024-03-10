@@ -139,13 +139,28 @@ get_disaggregated_vaccinated <- function(x) {
   #   )
 }
 
-reaggregated_df <- df |>
+single_year_df <- df |>
   group_by(date) |>
   group_map(~ {
     print(unique(.x$date))
     get_disaggregated_vaccinated(.x)
   }, .keep = TRUE) |>
   bind_rows() |>
+  ungroup()
+
+single_year_df2 <- single_year_df |>
+  mutate(age_group = as.character(age)) |>
+  select(date, population_vaccinated, age_group, value) |>
+  mutate(
+    age_group = case_when(
+      age_group %in% 95:120 ~ "95+",
+      .default = age_group
+    )
+  ) |>
+  group_by(date, age_group) |>
+  summarize(population_vaccinated = round(sum(value, na.rm = TRUE)))
+
+reaggregated_df <- single_year_df |>
   mutate(
     age_group = case_when(
       age %in% 0:20 ~ "0-20",
@@ -188,8 +203,13 @@ reaggregated_df2 <- reaggregated_df |>
   arrange(date, age_group)
 reaggregated_df2$age_group <- factor(reaggregated_df2$age_group, levels = order)
 
-get_data_by_time_resolution <- function(fun, week_offset = 0) {
-  x <- reaggregated_df2
+single_year_df3 <- single_year_df2 |>
+  group_by(age_group) |>
+  group_map(~ ensure_increasing(.x), .keep = TRUE) |>
+  bind_rows() |>
+  arrange(date, age_group)
+
+get_data_by_time_resolution <- function(x, fun, week_offset = 0) {
   x$date <- x$date + week_offset * 7
   x |>
     arrange(age_group, date) |>
@@ -212,7 +232,7 @@ get_data_by_time_resolution <- function(fun, week_offset = 0) {
 }
 
 # The underlying data is given at semi-random dates, let's align them to months
-weekly_pop_vaxx <- get_data_by_time_resolution(yearweek)
+weekly_pop_vaxx <- get_data_by_time_resolution(reaggregated_df2, yearweek)
 save_chart(
   plot(weekly_pop_vaxx, c("Re-binned age groups", "Adjusted for consitency")),
   "nzl/vaccinated_by_age_rebinned_adjusted",
@@ -225,21 +245,21 @@ pop <- read_csv("./data_static/DPE403901_20240303_071022_7.csv", skip = 3)
 quarterly_pop <- pop |>
   pivot_longer(
     cols = 2:ncol(pop),
-    names_to = "age",
+    names_to = "age_group",
     values_to = "population"
   ) |>
   filter(!is.na(population)) |>
-  setNames(c("date", "age", "population")) |>
+  setNames(c("date", "age_group", "population")) |>
   mutate(
     date = make_yearquarter(
       year = as.integer(left(date, 4)),
       quarter = as.integer(right(date, 1))
     ),
-    age = sub(" Years", "", age),
-    age = case_when(
-      age == "95 and Over" ~ "95+",
-      age == "Total All Ages" ~ "all",
-      .default = age
+    age_group = sub(" Years", "", age_group),
+    age_group = case_when(
+      age_group == "95 and Over" ~ "95+",
+      age_group == "Total All Ages" ~ "all",
+      .default = age_group
     )
   )
 
@@ -254,16 +274,18 @@ get_monthly <- function(df, n) {
     mutate(population = round(na.approx(population, na.rm = FALSE)))
 }
 
-monthly_pop <- quarterly_pop |>
-  group_by(age) |>
-  get_monthly(3) |>
+monthly_pop_single_years <- quarterly_pop |>
+  group_by(age_group) |>
+  get_monthly(3)
+
+monthly_pop <- monthly_pop_single_years |>
   mutate(age_group = case_when(
-    age %in% 0:20 ~ "0-20",
-    age %in% 21:40 ~ "21-40",
-    age %in% 41:60 ~ "41-60",
-    age %in% 61:80 ~ "61-80",
-    age %in% 81:94 ~ "81+",
-    age %in% "95+" ~ "81+",
+    age_group %in% 0:20 ~ "0-20",
+    age_group %in% 21:40 ~ "21-40",
+    age_group %in% 41:60 ~ "41-60",
+    age_group %in% 61:80 ~ "61-80",
+    age_group %in% 81:94 ~ "81+",
+    age_group %in% "95+" ~ "81+",
     .default = NA
   )) |>
   group_by(date, age_group) |>
@@ -271,7 +293,8 @@ monthly_pop <- quarterly_pop |>
   filter(!is.na(age_group))
 
 for (offset in -4:4) {
-  monthly_pop_vaxx <- get_data_by_time_resolution(yearmonth, offset)
+  monthly_pop_vaxx <-
+    get_data_by_time_resolution(reaggregated_df2, yearmonth, offset)
   monthly_pop_vaxx_status <- monthly_pop |>
     inner_join(monthly_pop_vaxx, by = join_by(date, age_group)) |>
     mutate(population_unvaccinated = population - population_vaccinated)
@@ -282,5 +305,17 @@ for (offset in -4:4) {
     upload = FALSE
   )
 }
+
+# Single Ages
+monthly_pop_vaxx <- get_data_by_time_resolution(single_year_df3, yearmonth)
+monthly_pop_vaxx_status <- monthly_pop_single_years |>
+  inner_join(monthly_pop_vaxx, by = join_by(date, age_group)) |>
+  mutate(population_unvaccinated = population - population_vaccinated)
+
+save_csv(
+  monthly_pop_vaxx_status,
+  paste0("nzl/population_vaccinated_month_single_age"),
+  upload = FALSE
+)
 
 # source("./covid19/nzl/vaxx_population.r")
