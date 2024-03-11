@@ -57,6 +57,33 @@ save_csv <- function(df, name, upload = upload_files) {
   }
 }
 
+save_csv_zip <- function(df, name, upload = upload_files) {
+  file_name <- paste0(name, ".csv")
+  local_file_name <- paste0("out/", file_name)
+
+  zip_file_name <- paste0("out/", name, ".csv.zip")
+  password <- Sys.getenv("ZIP_PASSWORD")
+
+  if (!dir.exists(dirname(local_file_name))) {
+    dir.create(dirname(local_file_name), recursive = TRUE)
+  }
+  write.csv(df, local_file_name, na = "", row.names = FALSE)
+
+  # Create a password-protected zip file
+  system(
+    paste0(
+      "cd ", getwd(), "/", dirname(local_file_name),
+      "; zip -e ", basename(zip_file_name),
+      " -P ", password, " ", basename(local_file_name)
+    ),
+    intern = TRUE
+  )
+
+  if (upload) {
+    upload_zip(zip_file_name)
+  }
+}
+
 write_csv <- function(df, name, append = FALSE) {
   file_name <- paste0(name, ".csv")
   local_file_name <- paste0("out/", file_name)
@@ -177,6 +204,19 @@ midyear <- function(data) {
 
 read_remote <- function(path) {
   as_tibble(read.csv(paste0("https://s3.mortality.watch/data/", path)))
+}
+
+read_remote_zip <- function(path) {
+  url <- paste0("https://s3.mortality.watch/data/", path, ".zip")
+  retry_download(url, paste0("/tmp/f.csv.zip"))
+  password <- Sys.getenv("ZIP_PASSWORD")
+
+  system(
+    paste0("cd /tmp; ", "unzip -P ", password, " f.csv.zip"),
+    intern = TRUE
+  )
+
+  as_tibble(read.csv(paste0("/tmp/", basename(path))))
 }
 
 sum_if_not_empty <- function(vec) {

@@ -132,15 +132,15 @@ result_20y <- result_10y |>
   group_by(iso3c, date, age_group, year, week) |>
   summarise(deaths = sum(deaths), .groups = "drop")
 
-save_csv(
+save_csv_zip(
   result_5y |> arrange(iso3c, year, week, age_group),
   "deaths/usa/weekly_5y"
 )
-save_csv(
+save_csv_zip(
   result_10y |> arrange(iso3c, year, week, age_group),
   "deaths/usa/weekly_10y"
 )
-save_csv(
+save_csv_zip(
   result_20y |> arrange(iso3c, year, week, age_group),
   "deaths/usa/weekly_20y"
 )
