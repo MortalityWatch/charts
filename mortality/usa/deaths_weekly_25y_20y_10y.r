@@ -45,7 +45,7 @@ suppressed <- result_1 |> filter(
 supressed_jur <- unique(suppressed$iso3c)
 
 # Continue dataset after 10/2023 via CDC Wonder
-df_weekly_5y <- read_remote("deaths/usa/weekly_5y.csv")
+df_weekly_5y <- read_remote_zip("deaths/usa/weekly_5y.csv")
 result_2 <- df_weekly_5y |>
   mutate(
     age_group = case_when(

@@ -53,7 +53,7 @@ save_csv <- function(df, name, upload = upload_files) {
   write.csv(df, local_file_name, na = "", row.names = FALSE)
 
   if (upload) {
-    upload_csv(name)
+    upload_file(file_name)
   }
 }
 
@@ -80,7 +80,7 @@ save_csv_zip <- function(df, name, upload = upload_files) {
   )
 
   if (upload) {
-    upload_zip(zip_file_name)
+    upload_file(paste0(file_name, ".csv.zip"))
   }
 }
 
@@ -101,8 +101,7 @@ write_csv <- function(df, name, append = FALSE) {
   )
 }
 
-upload_csv <- function(name) {
-  file_name <- paste0(name, ".csv")
+upload_file <- function(file_name) {
   local_file_name <- paste0("out/", file_name)
   aws.s3::put_object(
     file = local_file_name,
