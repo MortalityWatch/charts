@@ -80,7 +80,7 @@ save_csv_zip <- function(df, name, upload = upload_files) {
   )
 
   if (upload) {
-    upload_file(paste0(file_name, ".csv.zip"))
+    upload_file(paste0(file_name, ".zip"))
   }
 }
 
@@ -211,7 +211,7 @@ read_remote_zip <- function(path) {
   password <- Sys.getenv("ZIP_PASSWORD")
 
   system(
-    paste0("cd /tmp; ", "unzip -P ", password, " f.csv.zip"),
+    paste0("cd /tmp; ", "unzip -P ", password, " -o f.csv.zip"),
     intern = TRUE
   )
 

@@ -99,21 +99,6 @@ result <- rbind(
   complete(iso3c, date, age_group) |>
   filter(!is.na(year), !is.na(week), !is.na(age_group))
 
-save_csv(result, "deaths/usa/deaths_weekly_25y_20y_10y")
-
-# Data for USMortality.com
-result_2 <- result |>
-  inner_join(us_states_iso3c, by = "iso3c") |>
-  mutate(year_week = paste0(year, "_", week)) |>
-  select(jurisdiction, year, week, year_week, age_group, deaths) |>
-  rename(state = jurisdiction)
-result_2$deaths_covid <- NA
-date <- now() %m-% weeks(2)
-y <- year(date)
-w <- week(date)
-save_csv(result_2, paste0(
-  "deaths/usa/deaths_weekly_", y, "_",
-  sprintf("%02d", w)
-))
+save_csv_zip(result, "deaths/usa/deaths_weekly_25y_20y_10y")
 
 # source("mortality/usa/deaths_weekly_25y_20y_10y.r")
