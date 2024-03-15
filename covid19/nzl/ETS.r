@@ -14,7 +14,7 @@ nz <- df |>
 
 # Split data into training and test
 df_train <- nz |> filter(year < 2020)
-df_test <- nz |> filter(year > 2020)
+df_test <- nz |> filter(year >= 2020)
 
 # Model
 model <- df_train |> model(

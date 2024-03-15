@@ -290,3 +290,18 @@ chart <- df3 %>%
   theme(legend.title = element_blank()) +
   watermark()
 save_chart(chart, "nzl/asmr_vaxx_cum", upload = FALSE)
+
+# VE
+df_ve <- df3 %>% filter(offset == 0, date >= make_yearmonth(2022, 1))
+
+# Calculate the mean ASMR for vaccinated and unvaccinated individuals
+asmr_vaccinated <- mean(df_ve$asmr[df_ve$type == "vaccinated"])
+asmr_unvaccinated <- mean(df_ve$asmr[df_ve$type == "unvaccinated"])
+
+# Calculate the relative risk
+relative_risk <- asmr_vaccinated / asmr_unvaccinated
+
+# Calculate the vaccine efficacy
+vaccine_efficacy <- 1 - relative_risk
+
+# source("./covid19/nzl/rates.r")
