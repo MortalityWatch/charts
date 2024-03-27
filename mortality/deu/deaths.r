@@ -40,7 +40,8 @@ df <- rbind(result1, result2) |>
     deaths = as.integer(deaths)
   ) |>
   filter(!is.na(deaths)) |>
-  arrange(year, jurisdiction, age_group, week)
+  arrange(year, jurisdiction, age_group, week) |>
+  distinct(jurisdiction, year, week, age_group, .keep_all = TRUE)
 
 date <- now() %m-% weeks(2)
 y <- year(date)

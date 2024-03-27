@@ -202,11 +202,17 @@ midyear <- function(data) {
 }
 
 read_remote <- function(path) {
-  as_tibble(read.csv(paste0("https://s3.mortality.watch/data/", path)))
+  as_tibble(read.csv(paste0(
+    "https://s3.mortality.watch/data/", path,
+    "?cachebust=", as.numeric(Sys.time())
+  )))
 }
 
 read_remote_zip <- function(path) {
-  url <- paste0("https://s3.mortality.watch/data/", path, ".zip")
+  url <- paste0(
+    "https://s3.mortality.watch/data/", path, ".zip",
+    "?cachebust=", as.numeric(Sys.time())
+  )
   retry_download(url, paste0("/tmp/f.csv.zip"))
   password <- Sys.getenv("ZIP_PASSWORD")
 
