@@ -108,7 +108,7 @@ make_line_plot <- function(ts_plot) {
     theme_bw() +
     theme(axis.text.x = element_text(angle = 30, hjust = 0.5, vjust = 0.5)) +
     theme(legend.position = "top", legend.title = element_blank()) +
-    scale_x_continuous(breaks = unique(ts$date)) +
+    scale_x_continuous(breaks = unique(ts_plot$date)) +
     scale_y_continuous(labels = comma)
 }
 
@@ -139,7 +139,7 @@ make_excess_bar_plot <- function(ts_plot) {
     theme_bw() +
     theme(axis.text.x = element_text(angle = 30, hjust = 0.5, vjust = 0.5)) +
     theme(legend.position = "top", legend.title = element_blank()) +
-    scale_x_continuous(breaks = unique(ts$date)) +
+    scale_x_continuous(breaks = unique(ts_plot$date)) +
     scale_y_continuous(labels = scales::percent_format())
 }
 
