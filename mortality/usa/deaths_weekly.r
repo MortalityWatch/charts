@@ -31,7 +31,7 @@ parse_data <- function(df, jurisdiction_column, age_group) {
 
 get_csv <- function(j, y, a) {
   parse_data(
-    read_csv(paste0("../wonder_dl/out/", j, "_week_", a, "_", y, ".csv")),
+    read_csv(paste0("../wonder_dl/out/", j, "_week_", a, "_", y, ".csv"), col_types = "cccccccc"),
     ifelse(j == "usa", "", ifelse(y == "2018_n", "Residence State", "State")),
     a
   )
