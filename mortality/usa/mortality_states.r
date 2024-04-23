@@ -53,7 +53,12 @@ dd_us_age <- rbind(
 rm(deaths_weekly, deaths_monthly)
 
 # Population
-population <- read_remote("population/usa/10y.csv") |>
+population <- read_remote("population/usa/10y.csv")
+population <-
+  rbind(
+    population |> filter(year == 1999) |> mutate(year = 1998),
+    population
+  ) |>
   mutate(date = date(sprintf("%d-07-01", year)), .after = iso3c) |>
   group_by(iso3c) |>
   nest() |>
@@ -94,7 +99,7 @@ population2 <- read_remote("population/usa/5y.csv") |>
   summarise(population = sum(population)) |>
   ungroup() |>
   filter(!is.na(population)) |>
-  mutate(date = date(sprintf("%d-01-01", year)), .after = iso3c) |>
+  mutate(date = date(sprintf("%d-07-01", year)), .after = iso3c) |>
   group_by(iso3c) |>
   nest() |>
   mutate(
