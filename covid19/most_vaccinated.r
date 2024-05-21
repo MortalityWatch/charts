@@ -2,8 +2,6 @@ source("lib/common.r")
 
 data <- read.csv("./data/owid.csv") |> as_tibble()
 
-colnames(data)
-
 df <- data |>
   select(
     iso_code,

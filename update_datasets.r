@@ -34,6 +34,13 @@ urls <- list(
     "eurostat_population.tsv.gz"
   ),
   c(
+    paste0(
+      "https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/data/",
+      "tps00199/?format=TSV&compressed=true&i"
+    ),
+    "eurostat_fertility.tsv.gz"
+  ),
+  c(
     "https://mortality.org/File/GetDocument/Public/STMF/Outputs/stmf.csv",
     "mortality_org.csv"
   ),
