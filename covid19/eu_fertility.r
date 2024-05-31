@@ -86,11 +86,28 @@ fertility <- fertility |>
     custom_match = custom_match
   ))
 
-# Baseline
-fertility_bl <- fertility |>
-  filter(date %in% 2015:2019) |>
-  group_by(iso3c) |>
-  summarize(rate = mean(rate))
+models <- create_models(col = "rate", 2011)
+df_all <- tibble()
+for (mdl_key in names(models)) {
+  mdl <- models[[mdl_key]]
+  mdl$key <- mdl_key
+
+  years <- c(mdl$years, (max(mdl$years) + 1):(max(mdl$years) + 4))
+  df <- fertility |>
+    filter(date %in% years, !is.na(rate)) |>
+    group_by(iso3c) |>
+    filter(length(unique(date)) >= length(mdl$years)) |>
+    group_modify(~ calculate_baseline_excess(
+      .x,
+      metric_column = "rate",
+      period_type = "yearly",
+      bl_years = mdl$years,
+      bl_model = mdl$model,
+      fc_years = 4
+    ))
+  df$model <- mdl_key
+  df_all <- rbind(df_all, df)
+}
 
 # By year
 by_year <- fertility |>
@@ -121,10 +138,21 @@ df_plot <- rbind(
 
 df_plot$date <- factor(df_plot$date, levels = c("2021", "2022", "2021-2022"))
 
+df_plot <- df_all |>
+  filter(date >= 2020, !is.na(rate_ex)) |>
+  select(iso3c, date, rate_ex_p, model) |>
+  inner_join(
+    vaccinated |>
+      filter(date > 2020) |>
+      group_by(iso3c, date, dose) |>
+      summarize(vaccinated_pct = mean(vaccinated_pct, na.rm = TRUE)),
+    by = join_by(iso3c, date), relationship = "many-to-many"
+  )
+
 make_chart <- function(df) {
   ggplot(
     df,
-    aes(x = vaccinated_pct, y = fertility_ex_p)
+    aes(x = vaccinated_pct, y = rate_ex_p)
   ) +
     geom_point() +
     geom_smooth(method = "lm") +
@@ -147,7 +175,7 @@ make_chart <- function(df) {
     scale_y_continuous(labels = scales::percent_format()) +
     theme(legend.position = "top") +
     theme(legend.title = element_blank()) +
-    facet_wrap(vars(date, dose),
+    facet_wrap(vars(date, dose, model),
       scales = "free_x",
       labeller = labeller(date = label_both, dose = label_value)
     )
@@ -155,10 +183,9 @@ make_chart <- function(df) {
 
 save_chart(
   make_chart(df_plot |> filter(
-    !is.na(fertility_ex_p),
-    !is.na(vaccinated_pct)
+    model %in% c("naive", "lin_reg", "mean3", "mean5")
   )),
   "covid19/fertility_v_vaxx",
-  4,
+  8,
   upload = FALSE
 )
