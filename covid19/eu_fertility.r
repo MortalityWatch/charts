@@ -1,5 +1,127 @@
 source("lib/common.r")
 
+calculate_excess_ <- function(data, col_name) {
+  col <- sym(col_name)
+  data |> mutate(
+    "{col_name}_ex" := !!col - !!sym(paste0(col_name, "_bl")),
+    "{col_name}_ex_lo" :=
+      !!col - !!sym(paste0(col_name, "_bl_hi")),
+    "{col_name}_ex_hi" :=
+      !!col - !!sym(paste0(col_name, "_bl_lo"))
+  )
+}
+
+calculate_baseline_excess <- function(df,
+                                      metric_column,
+                                      period_type,
+                                      bl_years,
+                                      bl_model,
+                                      fc_years,
+                                      year_period_multiplier = 1,
+                                      date_col = "date") {
+  ts <- df |> as_tsibble(index = date_col)
+
+  if ((has_gaps(ts))$.gaps[1]) {
+    return(df)
+  }
+
+  forecast_interval <- round(fc_years * year_period_multiplier)
+
+  if (period_type %in% c("yearly", "fluseason", "midyear")) {
+    bl_data <- ts |> filter(!!sym(date_col) %in% bl_years)
+  } else {
+    bl_data <- ts |> filter(lubridate::year(!!sym(date_col)) %in% bl_years)
+  }
+
+  model <- bl_data |> fabletools::model(bl_model)
+  fc <- model |> fabletools::forecast(h = forecast_interval)
+  fc_hl <- fabletools::hilo(fc, 95) |> fabletools::unpack_hilo(cols = "95%")
+  bl <- model |> augment()
+
+  result <- tibble("{date_col}" := c(bl[[date_col]], fc[[date_col]])) |>
+    dplyr::mutate(
+      "{metric_column}_bl" := c(bl$.fitted, fc$.mean),
+      "{metric_column}_bl_lo" := c(
+        rep(NA, length(bl$.fitted)),
+        fc_hl$`95%_lower`
+      ),
+      "{metric_column}_bl_hi" := c(
+        rep(NA, length(bl$.fitted)),
+        fc_hl$`95%_upper`
+      )
+    )
+
+  ts |>
+    left_join(result, by = date_col) |>
+    relocate(
+      paste0(metric_column, "_bl"),
+      paste0(metric_column, "_bl_lo"),
+      paste0(metric_column, "_bl_hi"),
+      .after = all_of(metric_column)
+    ) |>
+    calculate_excess_(metric_column) |>
+    mutate(
+      "{metric_column}_ex_p" := !!sym(paste0(metric_column, "_ex")) /
+        !!sym(paste0(metric_column, "_bl")),
+      "{metric_column}_ex_p_lo" :=
+        !!sym(paste0(metric_column, "_ex_lo")) /
+          !!sym(paste0(metric_column, "_bl")),
+      "{metric_column}_ex_p_hi" :=
+        !!sym(paste0(metric_column, "_ex_hi")) /
+          !!sym(paste0(metric_column, "_bl")),
+      "{metric_column}_ex_sign" :=
+        ifelse(!!sym(paste0(metric_column, "_bl")) < 1, FALSE,
+          !!sym(metric_column) > !!sym(paste0(metric_column, "_bl_hi"))
+        )
+    ) |>
+    as_tibble()
+}
+
+create_models <- function(col, min_data_year) {
+  adjust_years <- function(start_year) {
+    if (start_year < min_data_year) {
+      return(min_data_year:2019)
+    } else {
+      return(start_year:2019)
+    }
+  }
+
+  models <- list(
+    naive = list(
+      title = "naive",
+      model = NAIVE(!!sym(col)),
+      years = adjust_years(2015)
+    ),
+    mean3 = list(
+      title = "mean",
+      model = TSLM(!!sym(col)),
+      years = adjust_years(2017)
+    ),
+    mean5 = list(
+      title = "mean",
+      model = TSLM(!!sym(col)),
+      years = adjust_years(2015)
+    ),
+    lin_reg = list(
+      title = "lin. regr.",
+      model = TSLM(!!sym(col) ~ trend()),
+      years = adjust_years(2010)
+    ),
+    ets15 = list(
+      title = "ETS",
+      model = ETS(!!sym(col) ~ error("A") + trend("Ad")),
+      years = adjust_years(2005)
+    ),
+    ets21 = list(
+      title = "ETS",
+      model = ETS(!!sym(col) ~ error("A") + trend("Ad")),
+      years = adjust_years(1999)
+    )
+  )
+
+  return(models)
+}
+
 custom_match <- c(EL = "GRC", UK = "GBR")
 
 # Vaccinated
