@@ -3,7 +3,7 @@ options(dplyr.summarise.inform = FALSE)
 options(warn = 2)
 options(readr.show_col_types = FALSE)
 
-upload_files <- TRUE
+upload_files <- FALSE
 
 libs <- read.table("dependencies_r.txt")
 for (lib in libs$V1) {
