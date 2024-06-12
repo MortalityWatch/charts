@@ -31,7 +31,10 @@ ny$jurisdiction <- "New York"
 df <- rbind(df |> filter(jurisdiction != "New York"), ny)
 
 result_1 <- df |>
-  left_join(us_states_iso3c, by = "jurisdiction") |>
+  left_join(
+    us_states_iso3c |> select(iso3c, jurisdiction),
+    by = "jurisdiction"
+  ) |>
   select(-"jurisdiction") |>
   mutate(year = year(date), week = isoweek(date)) |>
   arrange(iso3c, date, age_group)
