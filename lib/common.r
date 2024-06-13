@@ -2,6 +2,10 @@
 options(dplyr.summarise.inform = FALSE)
 options(warn = 2)
 options(readr.show_col_types = FALSE)
+options(error = function() {
+  traceback(3)
+  q("no", 1, FALSE)
+})
 
 upload_files <- FALSE
 

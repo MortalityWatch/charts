@@ -13,6 +13,7 @@ de_states <- as_tibble(read.csv("./data_static/deu_states_iso3c.csv")) |>
     paste0("DEU - ", jurisdiction)
   ))
 usa_states <- as_tibble(read.csv("./data_static/usa_states_iso3c.csv")) |>
+  select(iso3c, jurisdiction) |>
   mutate(jurisdiction = ifelse(
     jurisdiction == "United States",
     jurisdiction,
