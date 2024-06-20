@@ -39,7 +39,7 @@ pop <- pop_raw |>
 pop$jurisdiction <- "Deutschland"
 pop <- pop |> relocate(jurisdiction, year, age_group, population)
 
-# Genesis 12411-0005: Bevölkerung: Deutschland, Stichtag, Altersjahre
+# Genesis 12411-0012: Bevölkerung: Bundesländer, Stichtag, Altersjahre
 pop_raw <- as_tibble(
   head(
     read.csv("./data_static/12411-0012.csv",
