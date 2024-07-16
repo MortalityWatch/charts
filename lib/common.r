@@ -7,7 +7,7 @@ options(error = function() {
   q("no", 1, FALSE)
 })
 
-upload_files <- FALSE
+upload_files <- TRUE
 
 libs <- read.table("dependencies_r.txt")
 for (lib in libs$V1) {
