@@ -475,7 +475,7 @@ aggregate_80_plus <- function(df) {
   df |>
     mutate(
       age_group = case_when(
-        age_group %in% c("80-89", "90+") ~ "80+",
+        age_group %in% c("80-89", "90-99", "100+") ~ "80+",
         .default = age_group
       )
     ) |>
