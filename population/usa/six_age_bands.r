@@ -157,7 +157,8 @@ population_grouped_forecasted <- population_grouped |>
   mutate(data = lapply(data, forecast_population)) |>
   unnest(cols = "data") |>
   filter(!is.na(jurisdiction)) |>
-  relocate(iso3c, jurisdiction, age_group)
+  relocate(iso3c, jurisdiction, age_group) |>
+  select(-id)
 
 save_csv(population_grouped_forecasted, "population/usa/six_age_bands")
 
@@ -180,3 +181,5 @@ for (j in unique(population_grouped_forecasted$jurisdiction)) {
 
   save_chart(chart, paste0("population/usa/", j))
 }
+
+# source("./population/usa/six_age_bands.r")
