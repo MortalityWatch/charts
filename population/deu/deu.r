@@ -2,20 +2,41 @@ source("lib/common.r")
 
 de_states <- as_tibble(read.csv("./data_static/deu_states_iso3c.csv"))
 
-# Genesis 12411-0005: Bevölkerung: Deutschland, Stichtag, Altersjahre
-pop_raw <- as_tibble(
-  head(
-    read.csv("./data_static/12411-0005_$F.csv",
-      sep = ";",
-      skip = 6,
-      colClasses = c("character"),
-      fileEncoding = "latin1"
-    ),
-    -4
-  )
-)
+parse_age_groups <- function(df) {
+  df$age_group <- sub("unter 1 Jahr", "0", df$age_group)
+  df$age_group <- sub("unter 15 Jahre", "0-14", df$age_group)
+  df$age_group <- sub("50 Jahre und mehr", "50+", df$age_group)
+  df$age_group <- sub("85 Jahre und mehr", "85+", df$age_group)
+  df$age_group <- sub("Insgesamt", "all", df$age_group)
+  df$age_group <- sub("Alter unbekannt", NA, df$age_group)
+  df$age_group <- sub("-Jährige", "", df$age_group)
+  df$age_group <- sub("100 Jahre und mehr", "100+", df$age_group)
+  df
+}
 
-# Parse raw data
+
+fetch_genesis_data <- function(uri, skip, head) {
+  options(warn = 1)
+  pop_raw <- as_tibble(
+    head(
+      read_delim(
+        uri,
+        delim = ";",
+        skip = skip,
+        locale = locale(encoding = "latin1"),
+        col_types = cols(.default = "c")
+      ),
+      head
+    )
+  )
+  options(warn = 2)
+  return(pop_raw)
+}
+
+# Genesis 12411-0005: Bevölkerung: Deutschland, Stichtag, Altersjahre
+pop_raw <- fetch_genesis_data(
+  "https://apify.mortality.watch/destatis-genesis/12411-0005.csv", 6, -4
+)
 pop <- pop_raw |>
   pivot_longer(
     cols = 2:ncol(pop_raw),
@@ -23,53 +44,30 @@ pop <- pop_raw |>
     values_to = "population"
   ) |>
   setNames(c("age_group", "year", "population")) |>
-  rowwise() |>
+  parse_age_groups() |>
   mutate(
-    age_group = case_when(
-      age_group == "unter 1 Jahr" ~ "0",
-      age_group == "85 Jahre und mehr" ~ "85+",
-      age_group == "Alter unbekannt" ~ "NS",
-      age_group == "Insgesamt" ~ "all",
-      .default = str_split(age_group, "-")[[1]][1]
-    ),
     year = as.integer(right(year, 4)),
     population = as.integer(population)
   )
-
 pop$jurisdiction <- "Deutschland"
 pop <- pop |> relocate(jurisdiction, year, age_group, population)
 
 # Genesis 12411-0012: Bevölkerung: Bundesländer, Stichtag, Altersjahre
-pop_raw <- as_tibble(
-  head(
-    read.csv("./data_static/12411-0012.csv",
-      sep = ";",
-      skip = 5,
-      colClasses = c("character"),
-      fileEncoding = "latin1"
-    ),
-    -4
-  )
+pop_raw_historical <- fetch_genesis_data("./data_static/12411-0012.csv", 5, -4)
+pop_raw <- fetch_genesis_data(
+  "https://apify.mortality.watch/destatis-genesis/12411-0012.csv", 5, -4
 )
-
-# Parse raw data
-pop_states <- pop_raw |>
+pop_states <- rbind(pop_raw_historical, pop_raw) |>
   pivot_longer(
     cols = 3:ncol(pop_raw),
     names_to = "jurisdiction",
     values_to = "deaths"
   ) |>
   setNames(c("year", "age_group", "jurisdiction", "population")) |>
-  rowwise() |>
+  distinct(jurisdiction, year, age_group, .keep_all = TRUE) |>
+  parse_age_groups() |>
   mutate(
     jurisdiction = str_replace_all(jurisdiction, "\\.", "-"),
-    age_group = case_when(
-      age_group == "unter 1 Jahr" ~ "0",
-      age_group == "90 Jahre und mehr" ~ "90+",
-      age_group == "Alter unbekannt" ~ "NS",
-      age_group == "Insgesamt" ~ "all",
-      .default = str_split(age_group, "-")[[1]][1]
-    ),
     year = as.integer(right(year, 4)),
     population = suppress_warnings(
       as.integer(population),

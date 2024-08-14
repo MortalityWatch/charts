@@ -121,7 +121,8 @@ df <- read_csv("./data_wonder/population_usa-states_1999.csv") |> as_tibble()
 all <- parse_data(df, age_group = "all", year = 1999)
 
 # By 5y ag
-df <- read_csv("./data_wonder/population_usa-states_1999_age.csv") |> as_tibble()
+df <- read_csv("./data_wonder/population_usa-states_1999_age.csv") |>
+  as_tibble()
 age <- parse_data(df, age_group = "ag", year = 1999)
 
 df_1999 <- df <- bind_rows(usa, all, age) |>
@@ -132,10 +133,13 @@ df_1999 <- df <- bind_rows(usa, all, age) |>
 df_1999_10y <- df_1999 |> summarize_age_groups_10y()
 df_1999_20y <- df_1999_10y |> summarize_age_groups_20y()
 
-# 2000-2022
+# 2000-2023
 data0 <- as_tibble(read.csv("./data_static/population_usa_2000-2010.csv"))
 data1 <- as_tibble(read.csv("./data_static/population_usa_2010-2020.csv"))
-data2 <- as_tibble(read.csv("./data_static/population_usa_2020-2022.csv"))
+data2 <- as_tibble(read.csv(paste0(
+  "https://www2.census.gov/programs-surveys/popest/datasets/",
+  "2020-2023/state/asrh/sc-est2023-agesex-civ.csv"
+)))
 
 # Transform data
 a <- data0 |>
@@ -170,7 +174,7 @@ b <- data1 |>
 c <- data2 |>
   filter(SEX == 0) |>
   select(
-    NAME, AGE, POPEST2020_CIV, POPEST2021_CIV, POPEST2022_CIV
+    NAME, AGE, POPEST2020_CIV, POPEST2021_CIV, POPEST2022_CIV, POPEST2023_CIV
   ) |>
   pivot_longer(
     cols = starts_with("POPEST"), names_to = "year", values_to = "population"

@@ -3,8 +3,7 @@ source("population/deu/deu.r")
 
 download.file(
   "https://apify.mortality.watch/un-world-population.xlsx",
-  "/tmp/un-world-population.xlsx"
-)
+  "/tmp/un-world-population.xlsx")
 
 world_population_raw <- read_excel(
   "/tmp/un-world-population.xlsx",

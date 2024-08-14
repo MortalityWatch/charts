@@ -5,16 +5,21 @@ us_states_iso3c <- as_tibble(read.csv("./data_static/usa_states_iso3c.csv"))
 # Download data
 data0 <- as_tibble(read.csv("./data_static/population_usa_2000-2010.csv"))
 data1 <- as_tibble(read.csv("./data_static/population_usa_2010-2020.csv"))
-data2 <- as_tibble(read.csv("./data_static/population_usa_2020-2022.csv"))
+data2 <- as_tibble(read.csv(paste0(
+  "https://www2.census.gov/programs-surveys/popest/datasets/",
+  "2020-2023/state/asrh/sc-est2023-agesex-civ.csv"
+)))
+
 data3 <- as_tibble(
   read.csv("./data_static/population_usa_county_2000-2010.csv")
 )
 data4 <- as_tibble(
   read.csv("./data_static/population_usa_county_2010-2020.csv")
 )
-data5 <- as_tibble(
-  read.csv("./data_static/population_usa_county_2020-2022.csv")
-)
+data5 <- as_tibble(read.csv(paste0(
+  "https://www2.census.gov/programs-surveys/popest/datasets/",
+  "2020-2023/counties/asrh/cc-est2023-alldata.csv"
+)))
 
 # Transform data
 a <- data0 |>
@@ -49,7 +54,7 @@ b <- data1 |>
 c <- data2 |>
   filter(SEX == 0) |>
   select(
-    NAME, AGE, POPEST2020_CIV, POPEST2021_CIV, POPEST2022_CIV
+    NAME, AGE, POPEST2020_CIV, POPEST2021_CIV, POPEST2022_CIV, POPEST2023_CIV
   ) |>
   pivot_longer(
     cols = starts_with("POPEST"), names_to = "year", values_to = "population"
@@ -117,7 +122,9 @@ ny1 <- data4 |>
   as_tibble()
 
 ny2 <- data5 |>
-  mutate(YEAR = case_when(YEAR == 2 ~ 2020, YEAR == 3 ~ 2021)) |>
+  mutate(YEAR = case_when(
+    YEAR == 2 ~ 2020, YEAR == 3 ~ 2021, YEAR == 4 ~ 2022, YEAR == 5 ~ 2023
+  )) |>
   filter(!is.na(YEAR)) |>
   select(CTYNAME, AGEGRP, YEAR, TOT_POP) |>
   as_tibble()
