@@ -12,8 +12,13 @@ filter_complete_latest <- function(df) {
     select(-iso3c)
 }
 
+download.file(
+  "https://apify.mortality.watch/un-world-population.xlsx",
+  "/tmp/un-world-population.xlsx"
+)
+
 world <- read_excel(
-  "./data_static/WPP2022_GEN_F01_DEMOGRAPHIC_INDICATORS_COMPACT_REV1.xlsx",
+  "/tmp/un-world-population.xlsx",
   sheet = "Estimates",
   range = "F17:AE30000",
   col_types = "text"

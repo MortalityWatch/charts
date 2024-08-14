@@ -54,14 +54,6 @@ urls <- list(
   ),
   c(
     paste0(
-      "https://population.un.org/wpp/Download/Files/",
-      "1_Indicators%20(Standard)/EXCEL_FILES/1_General/WPP2022_GEN_F01_",
-      "DEMOGRAPHIC_INDICATORS_COMPACT_REV1.xlsx"
-    ),
-    "WPP2022_GEN_F01_DEMOGRAPHIC_INDICATORS_COMPACT_REV1.xlsx"
-  ),
-  c(
-    paste0(
       "https://data.cdc.gov/api/views/3yf8-kanr/rows.csv",
       "?accessType=DOWNLOAD&bom=true&format=true"
     ),
