@@ -3,10 +3,6 @@ options(timeout = 600)
 
 urls <- list(
   c(
-    "https://data.cdc.gov/api/views/hmz2-vwda/rows.csv?accessType=DOWNLOAD",
-    "covid19_usa_live_births.csv"
-  ),
-  c(
     paste0(
       "https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Bevoelkerung/",
       "Sterbefaelle-Lebenserwartung/Publikationen/Downloads-Sterbefaelle/",
