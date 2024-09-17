@@ -1,4 +1,5 @@
 source("lib/common.r")
+options(warn = 1)
 
 parse_data <- function(df, jurisdiction_column, age_group) {
   df <- df |>
@@ -31,8 +32,10 @@ parse_data <- function(df, jurisdiction_column, age_group) {
 
 get_csv <- function(j, y, a) {
   parse_data(
-    read_csv(paste0("../wonder_dl/out/", j, "_week_", a, "_", y, ".csv"), col_types = "cccccccc"),
-    ifelse(j == "usa", "", ifelse(y == "2018_n", "Residence State", "State")),
+    read_delim(paste0(
+      "../wonder_dl/data_wonder/weekly/", j, "_", a, "_", y, ".txt"
+    ), delim = "\t", col_types = cols(.default = "c")),
+    ifelse(j == "usa", "", ifelse(y == "2018-n", "Residence State", "State")),
     a
   )
 }
@@ -40,14 +43,14 @@ get_csv <- function(j, y, a) {
 us_states_iso3c <- read_csv("./data_static/usa_states_iso3c.csv")
 
 five_year_age_groups <- c(
-  "0_4", "5_9", "10_14", "15_19", "20_24", "25_29", "30_34", "35_39", "40_44",
-  "45_49", "50_54", "55_59", "60_64", "65_69", "70_74", "75_79", "80_84",
-  "85_89", "90_94", "95_100"
+  "0-4", "5-9", "10-14", "15-19", "20-24", "25-29", "30-34", "35-39", "40-44",
+  "45-49", "50-54", "55-59", "60-64", "65-69", "70-74", "75-79", "80-84",
+  "85-89", "90-94", "95-100"
 )
 
 df_result <- tibble()
-y <- "2018_n"
-for (j in c("usa", "usa_state")) {
+y <- "2018-n"
+for (j in c("usa", "usa-state")) {
   df_all <- get_csv(j, y, "all")
   # First calculate NS
   df_ns <- get_csv(j, y, "NS") |>
