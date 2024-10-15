@@ -10,6 +10,7 @@ parse_age_groups <- function(df) {
   df$age_group <- sub("Insgesamt", "all", df$age_group)
   df$age_group <- sub("Alter unbekannt", NA, df$age_group)
   df$age_group <- sub("-Jährige", "", df$age_group)
+  df$age_group <- sub("90 Jahre und mehr", "90+", df$age_group)
   df$age_group <- sub("100 Jahre und mehr", "100+", df$age_group)
   df
 }
