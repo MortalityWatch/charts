@@ -18,7 +18,7 @@ asmr_types <- c("asmr_who", "asmr_esp", "asmr_usa", "asmr_country")
 data <- rbind(
   deu_mortality_states,
   usa_mortality_states,
-  eurostat |> filter(!iso3c %in% c("SWE", "ARM")),
+  eurostat,
   world_mortality,
   mortality_org,
   un

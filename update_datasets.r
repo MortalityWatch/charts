@@ -25,7 +25,7 @@ urls <- list(
   c(
     paste0(
       "https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/data/",
-      "demo_pjan/?format=TSV&compressed=true&i"
+      "demo_pjangroup/?format=TSV&compressed=true&i"
     ),
     "eurostat_population.tsv.gz"
   ),

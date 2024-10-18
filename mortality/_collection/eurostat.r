@@ -106,9 +106,9 @@ population <- population_raw |>
   ) |>
   filter(!is.na(population)) |>
   separate_wider_delim(
-    freq.unit.age.sex.geo.TIME_PERIOD,
+    freq.unit.sex.age.geo.TIME_PERIOD,
     delim = ",",
-    names = c("frequencey", "unit", "age_group", "sex", "iso3c")
+    names = c("frequencey", "unit", "sex", "age_group", "iso3c")
   ) |>
   filter(sex == "T") |>
   mutate(
@@ -125,24 +125,56 @@ population <- population_raw |>
   select(iso3c, age_group, date, population)
 rm(population_raw)
 
-population_all <- population |> filter(age_group == "all")
+# Summarize age groups.
+population <- population |>
+  filter(!age_group %in% c("NS", "_GE75", "_GE85", "80-84")) |>
+  mutate(age_group = case_when(
+    age_group == "_LT5" ~ "0-4",
+    age_group == "_GE80" ~ "80+",
+    .default = age_group
+  )) |>
+  mutate(
+    age_group = case_when(
+      age_group %in% c("0-4", "5-9") ~ "0-9",
+      age_group %in% c("10-14", "15-19") ~ "10-19",
+      age_group %in% c("20-24", "25-29") ~ "20-29",
+      age_group %in% c("30-34", "35-39") ~ "30-39",
+      age_group %in% c("40-44", "45-49") ~ "40-49",
+      age_group %in% c("50-54", "55-59") ~ "50-59",
+      age_group %in% c("60-64", "65-69") ~ "60-69",
+      age_group %in% c("70-74", "75-79") ~ "70-79",
+      .default = age_group
+    )
+  ) |>
+  group_by(iso3c, date, age_group) |>
+  summarise(population = sum(population), .groups = "drop")
 
-# Summarize single ages to age groups.
-age_groups <- unique(
-  (deaths |> filter(!age_group %in% c("all", "NS")))$age_group
-)
-population_age <- population |>
-  filter(age_group != "all") |>
-  rowwise() |>
-  mutate(age_group = as_integer(age_group)) |>
-  filter(!is.na(age_group)) |>
-  nest(data = !c("iso3c", "date")) |>
-  mutate(data = lapply(data, get_population_by_age_group, age_groups)) |>
-  unnest(cols = c(data))
-rm(population, age_groups)
+# Interpolate to latest year, just filling from last avail. year.
+# Step 1: Get the latest year from the deaths dataset
+max_year <- max(year(deaths$date)) + 1
+# Step 2: Get the max year from population data
+pop_max_year <- max(population$date)
+# Step 3: Add missing years (if any)
+if (pop_max_year < max_year) {
+  population <- rbind(population, tibble(
+    iso3c = unique(population$iso3c)[1], # Use the first iso3c as a placeholder
+    date = (pop_max_year + 1):max_year, # Generate the range of missing years
+    age_group = "all", # Set a default age group
+    population = NA # Placeholder for population
+  ))
+}
+
+# Step 4: Complete, fill, and filter the population data
+population_projected <- population |>
+  complete(iso3c, date, age_group) |>
+  arrange(iso3c, age_group, date) |>
+  group_by(iso3c, age_group) |>
+  fill(population, .direction = "down") |>
+  filter(!is.na(population))
+rm(population)
 
 # Interpolate sub yearly population.
-population_daily <- rbind(population_all, population_age) |>
+population_daily <- population_projected |>
   mutate(date = date(sprintf("%d-01-01", date))) |>
   nest(data = !c("iso3c")) |>
   mutate(
@@ -153,7 +185,7 @@ population_daily <- rbind(population_all, population_age) |>
       unnest(cols = "data"))
   ) |>
   unnest(cols = "data")
-rm(population_all, population_age)
+rm(population_projected)
 
 eurostat <- deaths |>
   inner_join(population_daily, by = c("iso3c", "age_group", "date")) |>
@@ -171,3 +203,5 @@ eurostat$type <- 3
 eurostat$n_age_groups <- 9
 eurostat$source <- "eurostat"
 rm(deaths, population_daily)
+
+# source("mortality/_collection/eurostat.r")
