@@ -19,10 +19,14 @@ for (code in iso3c) {
     }
   }
 }
-# write.csv(
-#   result, "./data_static/validation.csv",
-#   row.names = FALSE, quote = TRUE
-# )
+
+if (Sys.getenv("RESET") != "") {
+  write.csv(
+    result, "./data_static/validation.csv",
+    row.names = FALSE, quote = TRUE
+  )
+}
+
 verified <- read_csv(
   "./data_static/validation.csv",
   col_types = cols(.default = "c")
