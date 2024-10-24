@@ -94,7 +94,7 @@
   </style>
 </head>
 
-<body>
+<body id="top">
 
   <a href="https://s3.mortality.watch/charts/list.html">
     <h1>Mortality.watch - Additional Charts</h1>
@@ -145,13 +145,16 @@
         const chartsContainer = document.getElementById('charts-container');
 
         data.forEach((entry, index) => {
-          const sectionId = `section-${index}`;
+          const sectionId = entry.title
+            .toLowerCase()
+            .replace(/\s+/g, '-')      // Replace spaces with hyphens
+            .replace(/[^\w-]+/g, '');  // Remove non-word characters
 
           // Add entry to the summary table
           const summaryRow = document.createElement('tr');
           summaryRow.innerHTML = `
             <td><a href="#${sectionId}">${entry.title}</a></td>
-            <td><a href="${entry.url}" target="_blank">View Source</a></td>
+            <td><a href="${entry.url}" target="_blank">View Gist</a></td>
           `;
           summaryTableBody.appendChild(summaryRow);
 
@@ -160,7 +163,7 @@
           section.id = sectionId;
           section.classList.add('chart-section');
           section.innerHTML = `
-            <h3>${entry.title}</h3>
+            <h3><a href="#${sectionId}">${entry.title}</a></h3>
             <a href="${entry.url}" target="_blank">Source</a><br />
           `;
 
@@ -170,6 +173,12 @@
             img.src = chartUrl;
             section.appendChild(img);
           });
+
+          // Create and append "to the top" link
+          const toTopLink = document.createElement('a');
+          toTopLink.href = '#top';
+          toTopLink.textContent = 'To the top ↑';
+          section.appendChild(toTopLink);
 
           chartsContainer.appendChild(section);
         });
