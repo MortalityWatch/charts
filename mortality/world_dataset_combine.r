@@ -21,7 +21,7 @@ load_country_data <- function(iso3c, type) {
 }
 
 # Types of data to load
-data_types <- c("yearly", "fluseason", "quarterly", "monthly")
+data_types <- c("yearly", "fluseason", "quarterly", "monthly", "weekly")
 
 # Load data for each type and save separate CSVs
 map(data_types, function(type) {
