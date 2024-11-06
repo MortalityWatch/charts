@@ -163,13 +163,14 @@ b <- data1 |>
     NAME, AGE,
     POPEST2010_CIV, POPEST2011_CIV, POPEST2012_CIV, POPEST2013_CIV,
     POPEST2014_CIV, POPEST2015_CIV, POPEST2016_CIV, POPEST2017_CIV,
-    POPEST2018_CIV, POPEST2019_CIV
+    POPEST2018_CIV, POPEST2019_CIV, POPEST2020_CIV
   ) |>
   pivot_longer(
     cols = starts_with("POPEST"), names_to = "year", values_to = "population"
   ) |>
   transform(year = str_sub(year, 7, 10)) |>
-  setNames(c("jurisdiction", "age", "year", "population"))
+  setNames(c("jurisdiction", "age", "year", "population")) |>
+  as_tibble()
 
 c <- data2 |>
   filter(SEX == 0) |>
@@ -180,7 +181,30 @@ c <- data2 |>
     cols = starts_with("POPEST"), names_to = "year", values_to = "population"
   ) |>
   transform(year = str_sub(year, 7, 10)) |>
-  setNames(c("jurisdiction", "age", "year", "population"))
+  setNames(c("jurisdiction", "age", "year", "population")) |>
+  as_tibble()
+
+# Compute the ratio of 2020 population between datasets b and c
+ratios <- b |>
+  filter(year == "2020") |>
+  inner_join(
+    c |> filter(year == "2020"),
+    by = c("jurisdiction", "age"),
+    suffix = c("_old", "_new")
+  ) |>
+  mutate(ratio = population_new / population_old) |>
+  select(jurisdiction, age, ratio)
+
+# Adjust populations for 2011–2019 based on the ratio
+b <- b |>
+  filter(year != "2020") |>
+  inner_join(ratios, by = c("jurisdiction", "age")) |>
+  mutate(
+    population = round(
+      population * (1 - (((as.numeric(year) - 2010) / 10)) * (1 - ratio))
+    )
+  ) |>
+  select(jurisdiction, age, year, population)
 
 # Create 5y age bands
 population_grouped <- bind_rows(list(a, b, c)) |>
