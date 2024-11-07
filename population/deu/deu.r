@@ -15,28 +15,33 @@ parse_age_groups <- function(df) {
   df
 }
 
-
-fetch_genesis_data <- function(uri, skip, head) {
+fetch_genesis_data <- function(uri, skip = 0, head = Inf, encoding = "utf8") {
   options(warn = 1)
-  pop_raw <- as_tibble(
-    head(
-      read_delim(
-        uri,
-        delim = ";",
-        skip = skip,
-        locale = locale(encoding = "latin1"),
-        col_types = cols(.default = "c")
-      ),
-      head
-    )
-  )
+  file_path <- if (grepl("\\.zip$", uri, ignore.case = TRUE)) {
+    download.file(uri, "/tmp/a.zip", mode = "wb")
+    csv_file <- unzip("/tmp/a.zip", list = TRUE)$Name[1]
+    unzip("/tmp/a.zip", files = csv_file, exdir = "/tmp")
+    file.path("/tmp", csv_file)
+  } else {
+    uri
+  }
+
+  result <- read_delim(
+    file_path,
+    delim = ";",
+    skip = skip,
+    locale = locale(encoding = encoding),
+    col_types = cols(.default = "c")
+  ) %>%
+    head(head) %>%
+    as_tibble()
   options(warn = 2)
-  return(pop_raw)
+  result
 }
 
 # Genesis 12411-0005: Bevölkerung: Deutschland, Stichtag, Altersjahre
 pop_raw <- fetch_genesis_data(
-  "https://apify.mortality.watch/destatis-genesis/12411-0005.csv", 6, -4
+  "https://apify.mortality.watch/destatis-genesis/12411-0005.zip", 6, -4
 )
 pop <- pop_raw |>
   pivot_longer(
@@ -54,9 +59,11 @@ pop$jurisdiction <- "Deutschland"
 pop <- pop |> relocate(jurisdiction, year, age_group, population)
 
 # Genesis 12411-0012: Bevölkerung: Bundesländer, Stichtag, Altersjahre
-pop_raw_historical <- fetch_genesis_data("./data_static/12411-0012.csv", 5, -4)
+pop_raw_historical <- fetch_genesis_data(
+  "./data_static/12411-0012.csv", 5, -4, "latin1"
+)
 pop_raw <- fetch_genesis_data(
-  "https://apify.mortality.watch/destatis-genesis/12411-0012.csv", 5, -4
+  "https://apify.mortality.watch/destatis-genesis/12411-0012.zip", 5, -4
 )
 pop_states <- rbind(pop_raw_historical, pop_raw) |>
   pivot_longer(
@@ -139,7 +146,7 @@ rm(pop_states)
 
 # Format: iso3c, jurisdiction, year, population, is_projection
 de_population <- rbind(pop2, pop3, pop_states2) |>
-  filter(!is.na(population)) |>
+  filter(!is.na(year), !is.na(population)) |>
   inner_join(de_states, by = "jurisdiction") |>
   select(iso3c, jurisdiction, year, age_group, population) |>
   group_by(iso3c, jurisdiction, year, age_group) |>
