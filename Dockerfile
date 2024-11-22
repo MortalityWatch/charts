@@ -1,6 +1,6 @@
 FROM eddelbuettel/r2u:22.04
 
-RUN echo "Updating deps... $CACHEBUST"
+RUN echo "Updating deps... 1/1/2025"
 RUN apt-get update
 ADD dependencies.txt .
 RUN apt-get install -y $(cat dependencies.txt)
