@@ -109,14 +109,13 @@ calc_85 <- function(data) {
   )
 }
 
-## National
-# By 5y ag
+# 1999 - only present in CDC Wonder data.
 df <- read_csv("./data_wonder/population_usa_1999_age.csv") |> as_tibble()
+## National
 usa <- parse_data(df, age_group = "ag", year = 1999) |>
   mutate(age_group = ifelse(is.na(age_group), "all", age_group))
 
 ## States
-# Totals
 df <- read_csv("./data_wonder/population_usa-states_1999.csv") |> as_tibble()
 all <- parse_data(df, age_group = "all", year = 1999)
 
@@ -240,6 +239,8 @@ population_grouped <- tibble(bind_rows(list(a, b, c))) |>
 population_grouped <- rbind(df_1999, population_grouped) |>
   inner_join(us_states_iso3c, by = c("jurisdiction"))
 
+
+
 # Update totals to Vintage 2024
 vintage2024_totals <- read_csv(
   paste0(
@@ -263,34 +264,36 @@ vintage2024_totals <- read_csv(
   )
 vintage2024_totals$age_group <- "all"
 
-# Copy 2023 to 2024
-population_grouped_2024 <- population_grouped |> filter(year == 2023)
-population_grouped_2024$year <- 2024
+scale_population <- function(df) {
+  # Copy 2023 to 2024
+  population_grouped_2024 <- df |> filter(year == 2023)
+  population_grouped_2024$year <- 2024
 
-population_grouped2 <- rbind(population_grouped, population_grouped_2024) |>
-  arrange(jurisdiction, age_group, year) |>
-  left_join(
-    vintage2024_totals,
-    by = join_by(age_group, id, year)
-  ) |>
-  mutate(population = ifelse(is.na(population2), population, population2)) |>
-  select(-population2)
+  population_grouped2 <- rbind(df, population_grouped_2024) |>
+    arrange(jurisdiction, age_group, year) |>
+    left_join(
+      vintage2024_totals,
+      by = join_by(age_group, id, year)
+    ) |>
+    mutate(population = ifelse(is.na(population2), population, population2)) |>
+    select(-population2)
 
-# Scale 2020-2024 age grouped populations by totals
-scaled_population <- population_grouped2 |>
-  group_by(id, year) |>
-  mutate(
-    total_all = sum(population[age_group == "all"], na.rm = TRUE),
-    total_not_all = sum(population[age_group != "all"], na.rm = TRUE),
-    scaling_factor = total_all / total_not_all,
-    population = round(ifelse(
-      age_group != "all", population * scaling_factor, population
-    ))
-  ) |>
-  ungroup() |>
-  select(-total_all, -total_not_all, -scaling_factor)
+  # Scale 2020-2024 age grouped populations by totals
+  population_grouped2 |>
+    group_by(id, year) |>
+    mutate(
+      total_all = sum(population[age_group == "all"], na.rm = TRUE),
+      total_not_all = sum(population[age_group != "all"], na.rm = TRUE),
+      scaling_factor = total_all / total_not_all,
+      population = round(ifelse(
+        age_group != "all", population * scaling_factor, population
+      ))
+    ) |>
+    ungroup() |>
+    select(-total_all, -total_not_all, -scaling_factor)
+}
 
-population_grouped_forecasted <- scaled_population |>
+population_grouped_forecasted <- scale_population(population_grouped) |>
   nest(data = c("year", "population")) |>
   mutate(data = lapply(data, forecast_population)) |>
   unnest(cols = "data") |>
@@ -324,7 +327,7 @@ population_grouped <- bind_rows(list(a, b, c)) |>
 population_grouped <- rbind(df_1999_10y, population_grouped) |>
   inner_join(us_states_iso3c, by = c("jurisdiction"))
 
-population_grouped_forecasted <- population_grouped |>
+population_grouped_forecasted <- scale_population(population_grouped) |>
   nest(data = c("year", "population")) |>
   mutate(data = lapply(data, forecast_population)) |>
   unnest(cols = "data") |>
@@ -354,7 +357,7 @@ population_grouped <- bind_rows(list(a, b, c)) |>
 population_grouped <- rbind(df_1999_20y, population_grouped) |>
   inner_join(us_states_iso3c, by = c("jurisdiction"))
 
-population_grouped_forecasted <- population_grouped |>
+population_grouped_forecasted <- scale_population(population_grouped) |>
   nest(data = c("year", "population")) |>
   mutate(data = lapply(data, forecast_population)) |>
   unnest(cols = "data") |>
