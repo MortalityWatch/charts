@@ -25,7 +25,7 @@ dd_us2$type <- 2
 
 dd_us <- rbind(dd_us1, dd_us2) |>
   arrange(iso3c, date, age_group, desc(type)) |>
-  distinct(iso3c, date, .keep_all = TRUE)
+  distinct(iso3c, date, type, .keep_all = TRUE)
 dd_us$n_age_groups <- 1
 
 rm(dd_us1, dd_us2)

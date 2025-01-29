@@ -47,7 +47,25 @@ save_info(
   df = data |> inner_join(iso3c_jurisdiction, by = c("iso3c")),
   upload = FALSE
 )
+
 rm(iso3c_jurisdiction)
+
+# Define type resolution priorities
+priority_weekly <- c(3, 2, 1) # Prefer 3, then 2, then 1
+priority_monthly <- c(2, 3, 1) # Prefer 2, then 3, then 1
+priority_yearly <- c(1, 2, 3) # Prefer 1, then 2, then 3
+priority_dataset <- c("cdc", "rki", "world_mortality", "mortality_org", "un")
+
+# Function to select the correct row per date based on priority order
+filter_by_priority <- function(data, priority_order) {
+  data |>
+    group_by(date, age_group) |>
+    # Arrange by the given priority order
+    arrange(match(source, priority_dataset), match(type, priority_order)) |>
+    slice(1) |> # Select the first row per date
+    ungroup()
+}
+
 process_country <- function(df) {
   iso3c <- df[1, ]$iso3c
   print(paste0("ISO: ", iso3c))
@@ -57,52 +75,84 @@ process_country <- function(df) {
   dd <- df |>
     mutate(cmr = deaths / population * 100000) |>
     expand_daily()
-  dd_all <- dd |>
-    filter(age_group == "all") |>
-    arrange(date, desc(type)) |>
-    distinct(iso3c, date, .keep_all = TRUE)
-  dd_age <- dd |>
-    filter(age_group != "all") |>
-    arrange(date, desc(type), age_group)
+  dd_all <- dd |> filter(age_group == "all")
+  dd_age <- dd |> filter(age_group != "all")
   dd_asmr <- dd_age
   if (nrow(dd_age)) {
     dd_asmr <- dd_age |>
       group_by(iso3c, type, n_age_groups, source) |>
       group_modify(~ calculate_asmr_variants(.x), .keep = TRUE) |>
-      mutate(max_date = max(date)) |>
-      ungroup() |>
-      filter(type == max(type), .by = c(iso3c, date)) |>
-      filter(max_date == max(max_date), .by = c(iso3c, date)) |>
-      filter(n_age_groups == max(n_age_groups), .by = c(iso3c, date)) |>
-      distinct(iso3c, date, .keep_all = TRUE) |>
-      arrange(date, type)
+      ungroup()
     dd_asmr$age_group <- "all"
   }
+
+  # Apply filtering to both datasets
+  dd_all_weekly <- filter_by_priority(dd_all, priority_weekly)
+  dd_all_monthly <- filter_by_priority(dd_all, priority_monthly)
+  dd_all_yearly <- filter_by_priority(dd_all, priority_yearly)
+
+  dd_asmr_weekly <- filter_by_priority(dd_asmr, priority_weekly)
+  dd_asmr_monthly <- filter_by_priority(dd_asmr, priority_monthly)
+  dd_asmr_yearly <- filter_by_priority(dd_asmr, priority_yearly)
+
+  dd_age_weekly <- filter_by_priority(dd_age, priority_weekly)
+  dd_age_monthly <- filter_by_priority(dd_age, priority_monthly)
+  dd_age_yearly <- filter_by_priority(dd_age, priority_yearly)
 
   for (ag in unique(dd$age_group)) {
     print(paste0("Age Group: ", ag))
     if (ag == "all") {
       write_dataset(
         iso3c, ag,
-        weekly = summarize_data_all(dd_all, dd_asmr, type = "yearweek"),
-        monthly = summarize_data_all(dd_all, dd_asmr, type = "yearmonth"),
-        quarterly = summarize_data_all(dd_all, dd_asmr, type = "yearquarter"),
-        yearly = summarize_data_all(dd_all, dd_asmr, type = "year"),
-        by_fluseason <- summarize_data_all(dd_all, dd_asmr, type = "fluseason"),
-        by_midyear = summarize_data_all(dd_all, dd_asmr, type = "midyear")
+        weekly = summarize_data_all(dd_all_weekly, dd_asmr_weekly,
+          type = "yearweek"
+        ),
+        monthly = summarize_data_all(dd_all_monthly, dd_asmr_monthly,
+          type = "yearmonth"
+        ),
+        quarterly = summarize_data_all(dd_all_monthly, dd_asmr_monthly,
+          type = "yearquarter"
+        ),
+        yearly = summarize_data_all(dd_all_yearly, dd_asmr_yearly,
+          type = "year"
+        ),
+        by_fluseason = summarize_data_all(dd_all_monthly, dd_asmr_monthly,
+          type = "fluseason"
+        ),
+        by_midyear = summarize_data_all(dd_all_monthly, dd_asmr_monthly,
+          type = "midyear"
+        )
       )
     } else {
-      dd_ag_f <- dd_age |>
+      dd_ag_f_weekly <- dd_age_weekly |>
+        filter(age_group == ag) |>
+        distinct(iso3c, date, age_group, .keep_all = TRUE)
+      dd_ag_f_monthly <- dd_age_monthly |>
+        filter(age_group == ag) |>
+        distinct(iso3c, date, age_group, .keep_all = TRUE)
+      dd_ag_f_yearly <- dd_age_yearly |>
         filter(age_group == ag) |>
         distinct(iso3c, date, age_group, .keep_all = TRUE)
       write_dataset(
         iso3c, ag,
-        weekly = summarize_data_by_time(dd_ag_f, type = "yearweek"),
-        monthly = summarize_data_by_time(dd_ag_f, type = "yearmonth"),
-        quarterly = summarize_data_by_time(dd_ag_f, type = "yearquarter"),
-        yearly = summarize_data_by_time(dd_ag_f, type = "year"),
-        by_fluseason = summarize_data_by_time(dd_ag_f, type = "fluseason"),
-        by_midyear = summarize_data_by_time(dd_ag_f, type = "midyear")
+        weekly = summarize_data_by_time(dd_ag_f_weekly,
+          type = "yearweek"
+        ),
+        monthly = summarize_data_by_time(dd_ag_f_monthly,
+          type = "yearmonth"
+        ),
+        quarterly = summarize_data_by_time(dd_ag_f_monthly,
+          type = "yearquarter"
+        ),
+        yearly = summarize_data_by_time(dd_ag_f_yearly,
+          type = "year"
+        ),
+        by_fluseason = summarize_data_by_time(dd_ag_f_monthly,
+          type = "fluseason"
+        ),
+        by_midyear = summarize_data_by_time(dd_ag_f_monthly,
+          type = "midyear"
+        )
       )
     }
   }
