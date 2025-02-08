@@ -17,31 +17,21 @@ parse_age_groups <- function(df) {
 
 fetch_genesis_data <- function(uri, skip = 0, head = Inf, encoding = "utf8") {
   options(warn = 1)
-  file_path <- if (grepl("\\.zip$", uri, ignore.case = TRUE)) {
-    download.file(uri, "/tmp/a.zip", mode = "wb")
-    csv_file <- unzip("/tmp/a.zip", list = TRUE)$Name[1]
-    unzip("/tmp/a.zip", files = csv_file, exdir = "/tmp")
-    file.path("/tmp", csv_file)
-  } else {
-    uri
-  }
-
   result <- read_delim(
-    file_path,
+    uri,
     delim = ";",
     skip = skip,
     locale = locale(encoding = encoding),
     col_types = cols(.default = "c")
   ) %>%
-    head(head) %>%
-    as_tibble()
+    head(head)
   options(warn = 2)
   result
 }
 
 # Genesis 12411-0005: Bevölkerung: Deutschland, Stichtag, Altersjahre
 pop_raw <- fetch_genesis_data(
-  "https://apify.mortality.watch/destatis-genesis/12411-0005.zip", 6, -4
+  "https://apify.mortality.watch/destatis-genesis/12411-0005.gz", 6, -4
 )
 pop <- pop_raw |>
   pivot_longer(
@@ -63,7 +53,7 @@ pop_raw_historical <- fetch_genesis_data(
   "./data_static/12411-0012.csv", 5, -4, "latin1"
 )
 pop_raw <- fetch_genesis_data(
-  "https://apify.mortality.watch/destatis-genesis/12411-0012.zip", 5, -4
+  "https://apify.mortality.watch/destatis-genesis/12411-0012.gz", 5, -4
 )
 pop_states <- rbind(pop_raw_historical, pop_raw) |>
   pivot_longer(
