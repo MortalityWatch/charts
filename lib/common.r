@@ -717,3 +717,16 @@ retry_download <- function(url, dir, retry = 3) {
     }
   }
 }
+
+read_zip <- function(url, file_name, delim = ";", skip = 0) {
+  temp <- tempfile(fileext = ".zip")
+  on.exit(unlink(temp))
+
+  download.file(url, temp, quiet = TRUE)
+
+  read_delim(
+    unz(temp, file_name),
+    delim = delim,
+    skip = skip
+  )
+}

@@ -75,3 +75,11 @@ git fetch
 git reset origin/master --hard
 Rscript script.r
 ```
+
+# Data Format
+Example:
+   iso3c date       age_group deaths population  type n_age_groups source
+   <chr> <date>     <chr>      <int>      <dbl> <dbl>        <dbl> <chr> 
+ 1 USA   1999-01-01 0-9         3094   39742004     2            9 cdc   
+ 2 USA   1999-01-01 10-19       1413   40297966     2            9 cdc   
+ 3 USA   1999-01-01 20-29       2813   38166486     2            9 cdc   

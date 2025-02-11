@@ -9,6 +9,7 @@ source("mortality/_collection/mortality_org.r")
 source("mortality/_collection/world_mortality.r")
 source("mortality/_collection/eurostat.r")
 source("mortality/usa/mortality_states.r")
+source("mortality/can/mortality_states.r")
 source("mortality/deu/mortality_states.r")
 
 # Load Data
@@ -17,6 +18,7 @@ asmr_types <- c("asmr_who", "asmr_esp", "asmr_usa", "asmr_country")
 
 data <- rbind(
   deu_mortality_states,
+  can_mortality_states,
   usa_mortality_states,
   eurostat,
   world_mortality,
@@ -27,11 +29,20 @@ data <- rbind(
 
 rm(
   deu_mortality_states,
+  can_mortality_states,
   usa_mortality_states,
   eurostat,
   world_mortality,
   mortality_org,
   un
+)
+
+# Define type resolution priorities
+priority_weekly <- c(3, 2, 1) # Prefer 3, then 2, then 1
+priority_monthly <- c(2, 3, 1) # Prefer 2, then 3, then 1
+priority_yearly <- c(1, 2, 3) # Prefer 1, then 2, then 3
+priority_dataset <- c(
+  "cdc", "statcan", "rki", "world_mortality", "mortality_org", "un"
 )
 
 if (Sys.getenv("STAGE") != "") {
@@ -49,12 +60,6 @@ save_info(
 )
 
 rm(iso3c_jurisdiction)
-
-# Define type resolution priorities
-priority_weekly <- c(3, 2, 1) # Prefer 3, then 2, then 1
-priority_monthly <- c(2, 3, 1) # Prefer 2, then 3, then 1
-priority_yearly <- c(1, 2, 3) # Prefer 1, then 2, then 3
-priority_dataset <- c("cdc", "rki", "world_mortality", "mortality_org", "un")
 
 # Function to select the correct row per date based on priority order
 filter_by_priority <- function(data, priority_order) {
