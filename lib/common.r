@@ -730,3 +730,30 @@ read_zip <- function(url, file_name, delim = ";", skip = 0) {
     skip = skip
   )
 }
+
+parse_age_groups <- function(df) {
+  df$age_group <- sub("unter 1 Jahr", "0", df$age_group)
+  df$age_group <- sub("unter 15 Jahre", "0-14", df$age_group)
+  df$age_group <- sub("50 Jahre und mehr", "50+", df$age_group)
+  df$age_group <- sub("85 Jahre und mehr", "85+", df$age_group)
+  df$age_group <- sub("Insgesamt", "all", df$age_group)
+  df$age_group <- sub("Alter unbekannt", NA, df$age_group)
+  df$age_group <- sub("-Jährige", "", df$age_group)
+  df$age_group <- sub("90 Jahre und mehr", "90+", df$age_group)
+  df$age_group <- sub("100 Jahre und mehr", "100+", df$age_group)
+  df
+}
+
+fetch_genesis_data <- function(uri, skip = 0, head = Inf, encoding = "utf8") {
+  options(warn = 1)
+  result <- read_delim(
+    uri,
+    delim = ";",
+    skip = skip,
+    locale = locale(encoding = encoding),
+    col_types = cols(.default = "c")
+  ) %>%
+    head(head)
+  options(warn = 2)
+  result
+}

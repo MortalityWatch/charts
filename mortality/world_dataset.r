@@ -42,7 +42,7 @@ priority_weekly <- c(3, 2, 1) # Prefer 3, then 2, then 1
 priority_monthly <- c(2, 3, 1) # Prefer 2, then 3, then 1
 priority_yearly <- c(1, 2, 3) # Prefer 1, then 2, then 3
 priority_dataset <- c(
-  "cdc", "statcan", "rki", "world_mortality", "mortality_org", "un"
+  "cdc", "statcan", "destatis", "world_mortality", "mortality_org", "un"
 )
 
 if (Sys.getenv("STAGE") != "") {
