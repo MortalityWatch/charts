@@ -6,7 +6,7 @@ ADD dependencies.txt .
 RUN apt-get install -y $(cat dependencies.txt)
 
 ENV NODE_VERSION="20.x"
-ENV CRONICLE_VERSION="v0.9.61"
+ENV CRONICLE_VERSION="v0.9.73"
 
 RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION} | bash -
 RUN apt-get install -y nodejs
