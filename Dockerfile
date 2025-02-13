@@ -37,7 +37,6 @@ ENV CRONICLE_Storage__AWS__credentials__secretAccessKey=${S3_SECRET}
 ENV CRONICLE_Storage__AWS__credentials__accessKeyId=minio
 ENV CRONICLE_mail_options__auth__user=${SENDINBLUE_USER}
 ENV CRONICLE_mail_options__auth__pass=${SENDINBLUE_PASS}
-ENV CRONICLE_client__custom_live_log_socket_url="https://cron.mortality.watch"
 
 ADD entrypoint.sh .
 ADD config.json .
