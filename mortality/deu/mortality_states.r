@@ -128,6 +128,7 @@ rm(df)
 source("population/deu/deu.r")
 
 population <- de_population |>
+  filter(year >= 1991) |> # Before 1991 data only for West-Germany available.
   mutate(date = date(sprintf("%d-12-31", year)), .after = iso3c) |>
   group_by(iso3c) |>
   nest() |>

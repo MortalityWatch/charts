@@ -67,12 +67,7 @@ urls <- list(
     "countries.csv"
   ),
   c(
-    paste0(
-      "https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Bevoelkerung/",
-      "Sterbefaelle-Lebenserwartung/Publikationen/Downloads-Sterbefaelle/",
-      "statistischer-bericht-sterbefaelle-tage-wochen-monate-endg-5126108",
-      ".xlsx?__blob=publicationFile"
-    ),
+    "https://www.destatis.de/static/DE/dokumente/5126108209005_SB.xlsx",
     "sonderauswertung-sterbefaelle-endgueltige-daten.xlsx"
   ),
   c(
