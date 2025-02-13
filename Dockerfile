@@ -5,8 +5,8 @@ RUN apt-get update
 ADD dependencies.txt .
 RUN apt-get install -y $(cat dependencies.txt)
 
-ENV NODE_VERSION="20.x"
-ENV CRONICLE_VERSION="v0.9.73"
+ENV NODE_VERSION="18.x"
+ENV CRONICLE_VERSION="v0.9.30"
 
 RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION} | bash -
 RUN apt-get install -y nodejs
@@ -37,6 +37,7 @@ ENV CRONICLE_Storage__AWS__credentials__secretAccessKey=${S3_SECRET}
 ENV CRONICLE_Storage__AWS__credentials__accessKeyId=minio
 ENV CRONICLE_mail_options__auth__user=${SENDINBLUE_USER}
 ENV CRONICLE_mail_options__auth__pass=${SENDINBLUE_PASS}
+ENV CRONICLE_client__custom_live_log_socket_url="https://cron.mortality.watch"
 
 ADD entrypoint.sh .
 ADD config.json .
