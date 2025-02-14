@@ -1,7 +1,8 @@
 # Stage 1: Build Cronicle
 FROM cronicle/base-alpine AS cronicle-build
 RUN apk add --no-cache git npm python3 alpine-sdk && \ 
-git clone --depth=1 https://github.com/cronicle-edge/cronicle-edge /build/cronicle-edge
+git clone --depth=1 https://github.com/cronicle-edge/cronicle-edge \ 
+/build/cronicle-edge
 
 WORKDIR /build/cronicle-edge
 
@@ -46,7 +47,8 @@ ENV PATH="/opt/cronicle/bin:/opt/cronicle/minio-binaries:${PATH}" \
   CRONICLE_Storage__AWS__credentials__accessKeyId=minio
 
 # Protect sensitive folders
-RUN mkdir -p /opt/cronicle/data /opt/cronicle/conf && chmod 0700 /opt/cronicle/data /opt/cronicle/conf
+RUN mkdir -p /opt/cronicle/data /opt/cronicle/conf && chmod 0700 \ 
+/opt/cronicle/data /opt/cronicle/conf
 
 # SSL configuration
 COPY openssl.cnf .
@@ -54,9 +56,10 @@ ENV OPENSSL_CONF=/opt/cronicle/openssl.cnf
 
 # Install MinIO Client
 RUN mkdir -p minio-binaries && \ 
-curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o minio-binaries/mc && \ 
-chmod +x minio-binaries/mc && \ 
-minio-binaries/mc alias set minio http://s3-gate.mortality.watch minio $S3_SECRET
+curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc \ 
+-o minio-binaries/mc && chmod +x minio-binaries/mc && \ 
+minio-binaries/mc alias set minio http://s3-gate.mortality.watch \ 
+minio $S3_SECRET
 
 # Install R dependencies
 COPY dependencies_r.txt install_r_deps.sh .

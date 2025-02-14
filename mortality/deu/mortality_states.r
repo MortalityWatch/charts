@@ -128,7 +128,7 @@ rm(df)
 source("population/deu/deu.r")
 
 population <- de_population |>
-  filter(year >= 1991) |> # Before 1991 data only for West-Germany available.
+  filter(year >= 1990) |> # Before 1990 data only for West-Germany available.
   mutate(date = date(sprintf("%d-12-31", year)), .after = iso3c) |>
   group_by(iso3c) |>
   nest() |>
@@ -151,5 +151,10 @@ deu_mortality_states <- rbind(df_year, df_all, df_age_d_7, df_age_states) |>
 deu_mortality_states$source <- "destatis"
 
 rm(df_year, df_all, df_age_d_7, df_age_states, population)
+
+deu <- deu_mortality_states |> filter(iso3c == "DEU")
+stopifnot(length(unique(deu$age_group)) == 11)
+by <- deu_mortality_states |> filter(iso3c == "DEU-BY")
+stopifnot(length(unique(by$age_group)) == 5)
 
 # source("./mortality/deu/mortality_states.r")

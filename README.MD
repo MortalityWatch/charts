@@ -20,49 +20,22 @@ See https://www.mortality.watch/ for the frontend.
 ## MinIO/S3
 Set build args:
 ```
-dokku docker-options:add cronicle build '--build-arg S3_SECRET=XXX --build-arg SENDINBLUE_USER=XXX --build-arg SENDINBLUE_PASS=XXX'
-```
-
-```
-dokku config:set minio \
-  MINIO_SERVER_URL=https://s3.mortality.watch \
-  MINIO_BROWSER_REDIRECT_URL=https://admin-s3.mortality.watch
-```
-
-Dokku config:
-```
-dokku config:set minio \
-MINIO_ROOT_USER=minio \
-MINIO_ROOT_PASSWORD=XXX
+dokku docker-options:add cronicle build '--build-arg S3_SECRET=...'
 ```
 
 ## Cronicle/Job Scheduler
 Runs on a cronicle job scheduler, daily.
 
-Cronicle config on dokku:
+Dokku config:
 ```
-dokku config:set cronicle \
-  AWS_ACCESS_KEY_ID=minio \
-  AWS_SECRET_ACCESS_KEY=XXX \
-  AWS_S3_ENDPOINT=mortality.watch \
-  AWS_DEFAULT_REGION=s3
-
-dokku config:set cronicle \
-  TWITTER_API_KEY=XXX \
-  TWITTER_API_SECRET=XXX \
-  TWITTER_ACCESS_TOKEN=XXX \
-  TWITTER_ACCESS_SECRET=XXX
-```
-
-```
-dokku proxy:ports-add cronicle http:80:3012
-dokku plugin:install https://github.com/michaelshobbs/dokku-hostname.git dokku-hostname
-
-dokku config:set cronicle \
-  AWS_ACCESS_KEY_ID=minio \
-  AWS_SECRET_ACCESS_KEY=XXXXXXXX \
-  AWS_S3_ENDPOINT=mortality.watch \
-  AWS_DEFAULT_REGION=s3
+dokku config:set cronicle AWS_ACCESS_KEY_ID=minio
+dokku config:set cronicle AWS_DEFAULT_REGION=s3
+dokku config:set cronicle AWS_S3_ENDPOINT=mortality.watch
+dokku config:set cronicle AWS_SECRET_ACCESS_KEY=your_secret_access_key_here
+dokku config:set cronicle CRONICLE_job_memory_max=0
+dokku config:set cronicle CRONICLE_mail_options__auth__pass=your_email_password_here
+dokku config:set cronicle CRONICLE_mail_options__auth__user=benmarten1986@gmail.com
+dokku config:set cronicle ZIP_PASSWORD=your_zip_password_here
 ```
 
 Each cronicle job is setup like this:
@@ -76,7 +49,11 @@ git reset origin/master --hard
 Rscript script.r
 ```
 
+Backup is in cronicle.txt.
+
 # Data Format
+This is the data format used in the world_dataset.r script.
+
 Example:
    iso3c date       age_group deaths population  type n_age_groups source
    <chr> <date>     <chr>      <int>      <dbl> <dbl>        <dbl> <chr> 

@@ -29,20 +29,20 @@ pop_states <- pop_raw |>
   pivot_longer(
     cols = 3:ncol(pop_raw),
     names_to = "jurisdiction",
-    values_to = "deaths"
+    values_to = "population"
   ) |>
   setNames(c("year", "age_group", "jurisdiction", "population")) |>
-  distinct(jurisdiction, year, age_group, .keep_all = TRUE) |>
+  fill(year) |>
   parse_age_groups() |>
   mutate(
-    jurisdiction = str_replace_all(jurisdiction, "\\.", "-"),
     year = as.integer(right(year, 4)),
     population = suppress_warnings(
       as.integer(population),
       "NAs introduced by coercion"
     )
   ) |>
-  relocate(jurisdiction, year, age_group, population)
+  relocate(jurisdiction, year, age_group, population) |>
+  filter(!is.na(jurisdiction), !is.na(year), !is.na(age_group))
 rm(pop_raw)
 
 pop2 <- pop |>
