@@ -1,62 +1,74 @@
+# Stage 1: Build Cronicle
+FROM cronicle/base-alpine AS cronicle-build
+RUN apk add --no-cache git npm python3 alpine-sdk && \ 
+git clone --depth=1 https://github.com/cronicle-edge/cronicle-edge /build/cronicle-edge
+
+WORKDIR /build/cronicle-edge
+
+# Ensure the bundle script is executable and build Cronicle
+RUN chmod +x bundle && ./bundle /dist --s3 --tools
+
+# Stage 2: Final Image Based on R2U for R Dependencies
 FROM eddelbuettel/r2u:22.04
 
-RUN echo "Updating deps... 1/1/2025"
-RUN apt-get update
-ADD dependencies.txt .
-RUN apt-get install -y $(cat dependencies.txt)
-
-ENV NODE_VERSION="18.x"
-ENV CRONICLE_VERSION="v0.9.30"
-
-RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION} | bash -
-RUN apt-get install -y nodejs
-
-RUN curl -s https://raw.githubusercontent.com/jhuckaby/Cronicle/${CRONICLE_VERSION}/bin/install.js | node
 WORKDIR /opt/cronicle
 
-# Cronicle
-ENV CRONICLE_foreground=1
-ENV CRONICLE_echo=1
-ENV TZ=America/New_York
-ENV LANG="en_US.UTF-8"
-ENV LANGUAGE="en_US.UTF-8"
-ENV LC_ALL="en_US.UTF-8"
+# Copy and install system dependencies
+COPY dependencies.txt .
+RUN echo "Updating deps... 2/14/2025" && \ 
+apt-get update && \ 
+apt-get install -y $(cat dependencies.txt) && \ 
+rm -rf /var/lib/apt/lists/*
 
-RUN echo "Setting env vars.."
+# Copy Cronicle from the build stage
+COPY --from=cronicle-build /dist .
+
+# Create a non-root user for Cronicle
+RUN chown -R docker:docker /opt/cronicle
+
+# Define build-time arguments
 ARG S3_SECRET
-ARG SENDINBLUE_USER
-ARG SENDINBLUE_PASS
-ENV CRONICLE_manager 1
-ENV CRONICLE_secret_key=
-ENV CRONICLE_Storage__engine=S3
-ENV CRONICLE_Storage__S3__params__Bucket=cronicle
-ENV CRONICLE_Storage__AWS__endpoint=http://s3-gate.mortality.watch
-ENV CRONICLE_Storage__AWS__forcePathStyle=true
-ENV CRONICLE_Storage__AWS__region=us-east-1
-ENV CRONICLE_Storage__AWS__credentials__secretAccessKey=${S3_SECRET}
-ENV CRONICLE_Storage__AWS__credentials__accessKeyId=minio
-ENV CRONICLE_mail_options__auth__user=${SENDINBLUE_USER}
-ENV CRONICLE_mail_options__auth__pass=${SENDINBLUE_PASS}
-ENV CRONICLE_client__custom_live_log_socket_url="https://cron.mortality.watch"
 
-ADD entrypoint.sh .
-ADD config.json .
+# Set environment variables for Cronicle
+ENV PATH="/opt/cronicle/bin:/opt/cronicle/minio-binaries:${PATH}" \
+  CRONICLE_foreground=1 \
+  CRONICLE_echo=1 \
+  TZ=America/New_York \
+  LANG="en_US.UTF-8" \
+  LANGUAGE="en_US.UTF-8" \
+  LC_ALL="en_US.UTF-8" \
+  CRONICLE_Storage__engine=S3 \
+  CRONICLE_Storage__S3__params__Bucket=cronicle \
+  CRONICLE_Storage__AWS__endpoint=http://s3-gate.mortality.watch \
+  CRONICLE_Storage__AWS__forcePathStyle=true \
+  CRONICLE_Storage__AWS__region=us-east-1 \
+  CRONICLE_Storage__AWS__credentials__secretAccessKey="${S3_SECRET}" \
+  CRONICLE_Storage__AWS__credentials__accessKeyId=minio
 
-# Configure SSL version for R downloader
-ADD openssl.cnf .
+# Protect sensitive folders
+RUN mkdir -p /opt/cronicle/data /opt/cronicle/conf && chmod 0700 /opt/cronicle/data /opt/cronicle/conf
+
+# SSL configuration
+COPY openssl.cnf .
 ENV OPENSSL_CONF=/opt/cronicle/openssl.cnf
 
 # Install MinIO Client
-RUN curl https://dl.min.io/client/mc/release/linux-amd64/mc --create-dirs -o minio-binaries/mc
-RUN chmod +x minio-binaries/mc
-RUN echo "export PATH=$PATH:$(pwd)/minio-binaries/" >>~/.bashrc
-RUN minio-binaries/mc alias set minio http://s3-gate.mortality.watch minio $S3_SECRET
+RUN mkdir -p minio-binaries && \ 
+curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o minio-binaries/mc && \ 
+chmod +x minio-binaries/mc && \ 
+minio-binaries/mc alias set minio http://s3-gate.mortality.watch minio $S3_SECRET
 
-# R deps
-ADD dependencies_r.txt .
-ADD install_r_deps.sh .
-RUN /opt/cronicle/install_r_deps.sh
+# Install R dependencies
+COPY dependencies_r.txt install_r_deps.sh .
+RUN chmod +x install_r_deps.sh && ./install_r_deps.sh
 
+ENV NODE_VERSION="22.x"
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION} | bash -
+RUN apt-get install -y nodejs
+
+# Expose Cronicle Manager Port
 EXPOSE 3012
-ENTRYPOINT ["/bin/tini", "--"]
-CMD ["sh", "/opt/cronicle/entrypoint.sh"]
+
+# Set default command
+ENTRYPOINT ["/usr/bin/tini", "-s", "--"]
+CMD ["manager"]
