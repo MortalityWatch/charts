@@ -28,14 +28,18 @@ Runs on a cronicle job scheduler, daily.
 
 Dokku config:
 ```
-dokku config:set cronicle AWS_ACCESS_KEY_ID=minio
-dokku config:set cronicle AWS_DEFAULT_REGION=s3
-dokku config:set cronicle AWS_S3_ENDPOINT=mortality.watch
-dokku config:set cronicle AWS_SECRET_ACCESS_KEY=your_secret_access_key_here
-dokku config:set cronicle CRONICLE_job_memory_max=0
-dokku config:set cronicle CRONICLE_mail_options__auth__pass=your_email_password_here
-dokku config:set cronicle CRONICLE_mail_options__auth__user=benmarten1986@gmail.com
-dokku config:set cronicle ZIP_PASSWORD=your_zip_password_here
+dokku config:set cronicle AWS_ACCESS_KEY_ID=minio \ 
+AWS_DEFAULT_REGION=s3 \ 
+AWS_S3_ENDPOINT=mortality.watch \ 
+AWS_SECRET_ACCESS_KEY=your_secret_access_key_here \ 
+CRONICLE_job_memory_max=0 \ 
+CRONICLE_smtp_hostname=smtp-relay.sendinblue.com \ 
+CRONICLE_smtp_port=587 \ 
+CRONICLE_smtp_secure=false \ 
+CRONICLE_mail_options__auth__pass=your_email_password_here \ 
+CRONICLE_mail_options__auth__user=benmarten1986@gmail.com \ 
+CRONICLE_email_from=cron@mortality.watch \
+ZIP_PASSWORD=your_zip_password_here
 ```
 
 Each cronicle job is setup like this:
