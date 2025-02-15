@@ -1,18 +1,19 @@
 source("lib/common.r")
 
 parse_totals <- function(year) {
-  df <- read.csv(paste0(
-    "../wonder_dl/data_wonder/monthly/all/", year, ".txt"
-  ), sep = "\t") |>
-    as_tibble() |>
+  df <- suppress_warnings(
+    read_delim(paste0(
+      "../wonder_dl/data_wonder/monthly/all/", year, ".txt"
+    ), delim = "\t"), "One or more parsing issues"
+  ) |>
     rowwise() |>
     mutate(
       deaths = as_integer(Deaths),
-      year = as_integer(left(`Month.Code`, 4)),
-      month = as_integer(right(`Month.Code`, 2)),
+      year = as_integer(left(`Month Code`, 4)),
+      month = as_integer(right(`Month Code`, 2)),
       id = sprintf(
-        "%02d",
-        ifelse(year > 2020, Residence.State.Code, State.Code)
+        "%02s",
+        ifelse(year > 2020, `Residence State Code`, `State Code`)
       )
     ) |>
     mutate(date = make_yearmonth(year, month)) |>
@@ -42,15 +43,15 @@ parse_data <- function(df, state) {
     rowwise() |>
     mutate(
       deaths = as_integer(Deaths),
-      year = as_integer(left(`Month.Code`, 4)),
-      month = as_integer(right(`Month.Code`, 2))
+      year = as_integer(left(`Month Code`, 4)),
+      month = as_integer(right(`Month Code`, 2))
     ) |>
     mutate(date = make_yearmonth(year, month))
 
   df$iso3c <- (us_states_iso3c |> filter(id == state))$iso3c
 
   df |>
-    rename(age = Single.Year.Ages.Code) |>
+    rename(age = `Single-Year Ages Code`) |>
     filter(!is.na(date), age != "") |>
     select(
       "iso3c", "date", "year", "month", "age", "deaths"
@@ -60,9 +61,14 @@ parse_data <- function(df, state) {
 
 get_csv <- function(year, state) {
   parse_data(
-    df = read.csv(paste0(
-      "../wonder_dl/data_wonder/monthly/age/", year, "/", state, ".txt"
-    ), sep = "\t") |> as_tibble(), state
+    suppress_warnings(read_delim(
+      paste0(
+        "../wonder_dl/data_wonder/monthly/age/", year, "/", state, ".txt"
+      ),
+      delim = "\t",
+      col_types = cols(.default = "c")
+    ), "One or more parsing issues"),
+    state
   )
 }
 
@@ -71,14 +77,25 @@ us_states_iso3c <- read_csv("./data_static/usa_states_iso3c.csv")
 
 result_1y <- tibble()
 
+get_max_year <- function() {
+  files <- list.files(
+    "../wonder_dl/data_wonder/monthly/all/",
+    pattern = "\\d{4}\\.txt$", full.names = FALSE
+  )
+  years <- as.numeric(sub("\\.txt$", "", files))
+  max(years, na.rm = TRUE)
+}
+
+max_year <- get_max_year()
+
 # Get Totals per state/month
-for (year in 1999:2024) {
+for (year in 1999:max_year) {
   df_all <- parse_totals(year)
   result_1y <- bind_rows(result_1y, df_all)
 }
 
 # Age groups per state/month
-for (year in 1999:2024) {
+for (year in 1999:max_year) {
   print(paste0("Processing ", year))
 
   df_us <- get_csv(year, "all")
@@ -107,19 +124,7 @@ missing <- result_1y |>
 stopifnot(nrow(missing) == 0)
 
 # Sort
-age_levels <- c(
-  "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
-  "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
-  "21", "22", "23", "24", "25", "26", "27", "28", "29", "30",
-  "31", "32", "33", "34", "35", "36", "37", "38", "39", "40",
-  "41", "42", "43", "44", "45", "46", "47", "48", "49", "50",
-  "51", "52", "53", "54", "55", "56", "57", "58", "59", "60",
-  "61", "62", "63", "64", "65", "66", "67", "68", "69", "70",
-  "71", "72", "73", "74", "75", "76", "77", "78", "79", "80",
-  "81", "82", "83", "84", "85", "86", "87", "88", "89", "90",
-  "91", "92", "93", "94", "95", "96", "97", "98", "99", "100+",
-  "NS", "all"
-)
+age_levels <- c(as.character(0:100), "100+", "NS", "all")
 
 print("Complete NS based on all...")
 calc_ns <- function(data) {
