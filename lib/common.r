@@ -313,11 +313,15 @@ get_daily_from_monthly <- function(wd, columns, ex_columns = c()) {
   })
 }
 
+days_in_year <- function(year) {
+  start_date <- ymd(paste0(year, "-01-01"))
+  end_date <- ymd(paste0(year, "-12-31"))
+  as.integer(difftime(end_date, start_date, units = "days")) + 1
+}
+
 get_daily_from_yearly <- function(wd, columns, ex_columns = c()) {
   get_daily_from_n(wd, columns, ex_columns, fun = function(date) {
-    y <- year(date)
-    x <- lubridate::interval(paste0(y, "-01-01"), paste0(y, "-12-31"))
-    x %/% days(1) + 1
+    days_in_year(year(date))
   })
 }
 
