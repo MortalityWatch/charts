@@ -300,7 +300,7 @@ save_info <- function(df, upload) {
 }
 
 expand_daily <- function(df) {
-  cols <- c("deaths", "cmr")
+  cols <- c("deaths")
   ex_cols <- c("population")
   yearly <- df |>
     filter(.data$type == 1) |>

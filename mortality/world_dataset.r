@@ -78,8 +78,9 @@ process_country <- function(df) {
   fluseason <- fluseason
   midyear <- midyear
   dd <- df |>
-    mutate(cmr = deaths / population * 100000) |>
-    expand_daily()
+    expand_daily() |>
+    mutate(cmr = deaths / population * 100000)
+
   dd_all <- dd |> filter(age_group == "all")
   dd_age <- dd |> filter(age_group != "all")
   dd_asmr <- dd_age
