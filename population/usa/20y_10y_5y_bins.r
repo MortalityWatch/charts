@@ -298,7 +298,8 @@ population_grouped_forecasted <- scale_population(population_grouped) |>
   mutate(data = lapply(data, forecast_population)) |>
   unnest(cols = "data") |>
   filter(!is.na(jurisdiction)) |>
-  relocate(iso3c, jurisdiction, age_group)
+  relocate(iso3c, jurisdiction, age_group) |>
+  select(-id)
 
 save_csv(population_grouped_forecasted, "population/usa/5y")
 
@@ -332,7 +333,8 @@ population_grouped_forecasted <- scale_population(population_grouped) |>
   mutate(data = lapply(data, forecast_population)) |>
   unnest(cols = "data") |>
   filter(!is.na(jurisdiction)) |>
-  relocate(iso3c, jurisdiction, age_group)
+  relocate(iso3c, jurisdiction, age_group) |>
+  select(-id)
 
 save_csv(population_grouped_forecasted, "population/usa/10y")
 
@@ -362,7 +364,8 @@ population_grouped_forecasted <- scale_population(population_grouped) |>
   mutate(data = lapply(data, forecast_population)) |>
   unnest(cols = "data") |>
   filter(!is.na(jurisdiction)) |>
-  relocate(iso3c, jurisdiction, age_group)
+  relocate(iso3c, jurisdiction, age_group) |>
+  select(-id)
 
 save_csv(population_grouped_forecasted, "population/usa/20y")
 
