@@ -69,32 +69,44 @@ get_baseline_size <- function(data, iso) {
 }
 
 process_country <- function(iso3c) {
+  print(paste0("Processing, ", iso3c))
   result <- tibble()
-  data <- read_remote(paste0("mortality/", iso3c, "/yearly.csv"))
-  print(iso3c)
-  yearly <- data |>
-    filter(source != "un") |>
-    get_baseline_size(iso3c) |>
-    mutate(chart_type = "yearly", .after = "iso3c")
 
-  data <- read_remote(paste0("mortality/", iso3c, "/fluseason.csv"))
-  fluseason <- data |>
-    filter(source != "un") |>
-    mutate(date = as.integer(left(date, 4))) |>
-    get_baseline_size(iso3c) |>
-    mutate(chart_type = "fluseason", .after = "iso3c")
+  tryCatch(
+    {
+      # Yearly data
+      data <- read_remote(paste0("mortality/", iso3c, "/yearly.csv"))
+      yearly <- data |>
+        filter(source != "un") |>
+        get_baseline_size(iso3c) |>
+        mutate(chart_type = "yearly", .after = "iso3c")
 
-  data <- read_remote(paste0("mortality/", iso3c, "/midyear.csv"))
-  midyear <- data |>
-    filter(source != "un") |>
-    mutate(date = as.integer(left(date, 4))) |>
-    get_baseline_size(iso3c) |>
-    mutate(chart_type = "midyear", .after = "iso3c")
+      # Flu season data
+      data <- read_remote(paste0("mortality/", iso3c, "/fluseason.csv"))
+      fluseason <- data |>
+        filter(source != "un") |>
+        mutate(date = as.integer(left(date, 4))) |>
+        get_baseline_size(iso3c) |>
+        mutate(chart_type = "fluseason", .after = "iso3c")
 
-  rbind(result, rbind(yearly, fluseason, midyear))
+      # Midyear data
+      data <- read_remote(paste0("mortality/", iso3c, "/midyear.csv"))
+      midyear <- data |>
+        filter(source != "un") |>
+        mutate(date = as.integer(left(date, 4))) |>
+        get_baseline_size(iso3c) |>
+        mutate(chart_type = "midyear", .after = "iso3c")
+
+      rbind(result, rbind(yearly, fluseason, midyear))
+    },
+    error = function(e) {
+      message(paste("Error processing", iso3c, ":", e$message))
+      return(tibble(iso3c = iso3c, error = e$message))
+    }
+  )
 }
 
-meta <- read_remote("mortality/world_meta.csv")
+meta <- read_remote("mortality/world_meta.csv") |> filter(source != "un")
 codes <- unique(meta$iso3c)
 with_progress({
   p <- progressor(steps = length(codes))
