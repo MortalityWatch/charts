@@ -2,6 +2,7 @@
 options(dplyr.summarise.inform = FALSE)
 options(warn = 2)
 options(readr.show_col_types = FALSE)
+options(scipen = 999) # Disable scientific number notation
 
 upload_files <- TRUE
 
