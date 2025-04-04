@@ -41,33 +41,6 @@ filter_complete_latest <- function(df) {
     select(-iso3c)
 }
 
-get_baseline_size <- function(data, iso) {
-  result <- setNames(
-    data.frame(matrix(ncol = 3, nrow = 0)),
-    c("iso3c", "type", "window")
-  )
-  asmr_types <- c("asmr_who", "asmr_esp", "asmr_usa", "asmr_country")
-  types <- c("deaths", "cmr", asmr_types)
-  for (type in types) {
-    if (!type %in% colnames(data)) next
-
-    print(paste(type))
-    df <- data |>
-      filter(date < 2020, !is.na(!!sym(type))) |>
-      as_tsibble(index = date) |>
-      filter_complete_latest()
-
-    optimal_size <- ifelse(nrow(na.omit(df[type])) >= min_data_len,
-      get_optimal_size(df, type),
-      NA
-    )
-
-    result[nrow(result) + 1, ] <- c(iso, type, optimal_size)
-    print(paste0("Optimal window size: ", optimal_size))
-  }
-  result
-}
-
 process_country <- function(iso3c) {
   print(paste0("Processing, ", iso3c))
   result <- tibble()
@@ -78,7 +51,6 @@ process_country <- function(iso3c) {
       data <- read_remote(paste0("mortality/", iso3c, "/yearly.csv"))
       yearly <- data |>
         filter(source != "un") |>
-        get_baseline_size(iso3c) |>
         mutate(chart_type = "yearly", .after = "iso3c")
 
       # Flu season data
@@ -86,7 +58,6 @@ process_country <- function(iso3c) {
       fluseason <- data |>
         filter(source != "un") |>
         mutate(date = as.integer(left(date, 4))) |>
-        get_baseline_size(iso3c) |>
         mutate(chart_type = "fluseason", .after = "iso3c")
 
       # Midyear data
@@ -94,7 +65,6 @@ process_country <- function(iso3c) {
       midyear <- data |>
         filter(source != "un") |>
         mutate(date = as.integer(left(date, 4))) |>
-        get_baseline_size(iso3c) |>
         mutate(chart_type = "midyear", .after = "iso3c")
 
       rbind(result, rbind(yearly, fluseason, midyear))

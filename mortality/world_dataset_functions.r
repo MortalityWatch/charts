@@ -88,18 +88,6 @@ calc_sma <- function(data, n) {
   data
 }
 
-calculate_excess <- function(data, col_name) {
-  col <- sym(col_name)
-  data |> mutate(
-    "{col_name}_excess" := !!col - !!sym(paste0(col_name, "_baseline")),
-    "{col_name}_excess_lower" :=
-      !!col - !!sym(paste0(col_name, "_baseline_lower")),
-    "{col_name}_excess_upper" :=
-      !!col - !!sym(paste0(col_name, "_baseline_upper")),
-    .after = all_of(paste0(col_name, "_baseline_upper"))
-  )
-}
-
 get_period_multiplier <- function(chart_type) {
   if (chart_type %in% c("yearly", "fluseason", "midyear")) {
     return(1)
@@ -112,78 +100,6 @@ get_period_multiplier <- function(chart_type) {
   } else {
     return(52) # SMA
   }
-}
-
-apply_model <- function(data, col, chart_type) {
-  if (chart_type %in% c(
-    "weekly_26w_sma", "weekly_13w_sma", "quarterly", "monthly", "weekly"
-  )) {
-    data |> model(fable::TSLM(!!col ~ trend() + season()))
-  } else {
-    data |> model(fable::TSLM(!!col ~ trend()))
-  }
-}
-
-get_baseline_length <- function(iso, ct, cn) {
-  if (!ct %in% c("fluseason", "midyear")) ct <- "yearly"
-  baseline <- baseline_size |>
-    filter(.data$iso3c == iso & .data$chart_type == ct & .data$type == cn)
-  # Use at least five years baseline, if no ideal baseline size is available.
-  if (nrow(baseline) == 0) {
-    return(5)
-  }
-  if (is.na(baseline$window)) {
-    return(5)
-  } else {
-    return(baseline$window)
-  }
-}
-
-calculate_baseline <- function(ts, col_name, chart_type) {
-  iso <- ts[1, ]$iso3c
-  multiplier <- get_period_multiplier(chart_type)
-  bl_size <- round(get_baseline_length(iso, chart_type, col_name) * multiplier)
-  col <- sym(col_name)
-
-  forecast_interval <- round(8 * multiplier)
-
-  if (chart_type %in% c("yearly", "fluseason", "midyear")) {
-    df <- ts |> filter(date < 2020)
-  } else {
-    df <- ts |> filter(year(date) < 2020)
-  }
-
-  if (sum(!is.na(df[col_name])) < bl_size) {
-    return(ts) # Not enough rows, return
-  }
-
-  bl_data <- tail(df, bl_size)
-  fc <- bl_data |>
-    apply_model(col, chart_type) |>
-    forecast(h = forecast_interval)
-  fc_hl <- fabletools::hilo(fc, 95) |> unpack_hilo(cols = `95%`)
-
-  bl <- bl_data |>
-    apply_model(col, chart_type) |>
-    forecast(new_data = bl_data)
-
-  col <- sym(col_name)
-  result <- data.frame(date = c(bl$date, fc$date)) |> mutate(
-    "{col_name}_baseline" := c(bl$.mean, fc$.mean),
-    "{col_name}_baseline_lower" := c(rep(NA, nrow(bl)), fc_hl$`95%_lower`),
-    "{col_name}_baseline_upper" := c(rep(NA, nrow(bl)), fc_hl$`95%_upper`)
-  )
-
-  ts |>
-    left_join(result, by = "date") |>
-    relocate(
-      paste0(col_name, "_baseline"),
-      paste0(col_name, "_baseline_lower"),
-      paste0(col_name, "_baseline_upper"),
-      .after = all_of(col_name)
-    ) |>
-    calculate_excess(col_name) |>
-    round_x(col_name, ifelse(col_name == "deaths", 0, 2))
 }
 
 round_x <- function(data, col_name, digits = 0) {
@@ -202,43 +118,6 @@ round_x <- function(data, col_name, digits = 0) {
       "{col_name}_excess_upper" :=
         round(!!sym(paste0(col_name, "_excess_upper")), digits)
     )
-}
-
-calculate_baseline_excess <- function(df, chart_type) {
-  if (nrow(df) == 0) {
-    return(df)
-  }
-  if (chart_type %in% c("fluseason", "midyear")) {
-    ts <- df |>
-      mutate(date = as.integer(right(date, 4))) |>
-      as_tsibble(index = date)
-  } else {
-    ts <- df |> as_tsibble(index = date)
-  }
-
-  # Exclude UN dataset, which is based on projections.
-  result_un <- ts |> filter(source %in% c("un"))
-  result <- ts |>
-    filter(!source %in% c("un")) |>
-    calculate_baseline(col_name = "deaths", chart_type) |>
-    calculate_baseline(col_name = "cmr", chart_type)
-  if ("asmr_who" %in% colnames(ts)) {
-    result <- result |>
-      calculate_baseline(col_name = "asmr_who", chart_type) |>
-      calculate_baseline(col_name = "asmr_esp", chart_type) |>
-      calculate_baseline(col_name = "asmr_usa", chart_type) |>
-      calculate_baseline(col_name = "asmr_country", chart_type)
-  }
-  result <- bind_rows(result_un, result) |> arrange(date)
-
-  if (chart_type %in% c("fluseason", "midyear")) {
-    # Restore Flu Season Notation
-    result <- result |>
-      as_tibble() |>
-      mutate(date = paste0(date - 1, "-", date))
-  } else {
-    result |> as_tibble()
-  }
 }
 
 summarize_data_all <- function(dd_all, dd_asmr, type) {
@@ -330,90 +209,29 @@ write_dataset <- function(
     by_midyear) {
   postfix <- ifelse(ag == "all", "", paste0("_", ag))
 
-  write_csv(
-    df = weekly |>
-      calculate_baseline_excess(chart_type = "weekly") |>
-      select(-all_of("age_group")),
-    name = paste0("mortality/", iso3c, "/weekly", postfix)
-  )
+  write_and_select <- function(data, name_prefix) {
+    data |>
+      select(-all_of("age_group")) |>
+      write_csv(name = paste0("mortality/", iso3c, "/", name_prefix, postfix))
+  }
 
-  weekly104wsma <- weekly |>
-    calc_sma(104) |>
-    calculate_baseline_excess(chart_type = "weekly_104w_sma") |>
-    select(-all_of("age_group")) |>
-    filter(!is.na(.data$deaths))
-  write_csv(
-    df = weekly104wsma,
-    name = paste0("mortality/", iso3c, "/weekly_104w_sma", postfix)
-  )
+  calc_and_write_sma <- function(data, weeks, name_suffix) {
+    data |>
+      calc_sma(weeks) |>
+      select(-all_of("age_group")) |>
+      filter(!is.na(.data$deaths)) |>
+      write_csv(name = paste0("mortality/", iso3c, "/", name_suffix, postfix))
+  }
 
-  weekly52wsma <- weekly |>
-    calc_sma(52) |>
-    calculate_baseline_excess(chart_type = "weekly_52w_sma") |>
-    select(-all_of("age_group")) |>
-    filter(!is.na(.data$deaths))
-  write_csv(
-    df = weekly52wsma,
-    name = paste0("mortality/", iso3c, "/weekly_52w_sma", postfix)
-  )
+  write_and_select(weekly, "weekly")
+  calc_and_write_sma(weekly, 104, "weekly_104w_sma")
+  calc_and_write_sma(weekly, 52, "weekly_52w_sma")
+  calc_and_write_sma(weekly, 26, "weekly_26w_sma")
+  calc_and_write_sma(weekly, 14, "weekly_13w_sma")
 
-  weekly26wsma <- weekly |>
-    calc_sma(26) |>
-    calculate_baseline_excess(chart_type = "weekly_26w_sma") |>
-    select(-all_of("age_group")) |>
-    filter(!is.na(.data$deaths))
-  write_csv(
-    df = weekly26wsma,
-    name = paste0("mortality/", iso3c, "/weekly_26w_sma", postfix)
-  )
-
-  weekly13wsma <- weekly |>
-    calc_sma(14) |>
-    calculate_baseline_excess(chart_type = "weekly_14w_sma") |>
-    select(-all_of("age_group")) |>
-    filter(!is.na(.data$deaths))
-  write_csv(
-    df = weekly13wsma,
-    name = paste0("mortality/", iso3c, "/weekly_13w_sma", postfix)
-  )
-
-  monthly <- monthly |>
-    calculate_baseline_excess(chart_type = "monthly") |>
-    select(-all_of("age_group"))
-  write_csv(
-    df = monthly,
-    name = paste0("mortality/", iso3c, "/monthly", postfix)
-  )
-
-  quarterly <- quarterly |>
-    calculate_baseline_excess(chart_type = "quarterly") |>
-    select(-all_of("age_group"))
-  write_csv(
-    df = quarterly,
-    name = paste0("mortality/", iso3c, "/quarterly", postfix)
-  )
-
-  yearly <- yearly |>
-    calculate_baseline_excess(chart_type = "yearly") |>
-    select(-all_of("age_group"))
-  write_csv(
-    df = yearly,
-    name = paste0("mortality/", iso3c, "/yearly", postfix)
-  )
-
-  by_fluseason <- by_fluseason |>
-    calculate_baseline_excess(chart_type = "fluseason") |>
-    select(-all_of("age_group"))
-  write_csv(
-    df = by_fluseason,
-    name = paste0("mortality/", iso3c, "/fluseason", postfix)
-  )
-
-  by_midyear <- by_midyear |>
-    calculate_baseline_excess(chart_type = "midyear") |>
-    select(-all_of("age_group"))
-  write_csv(
-    df = by_midyear,
-    name = paste0("mortality/", iso3c, "/midyear", postfix)
-  )
+  write_and_select(monthly, "monthly")
+  write_and_select(quarterly, "quarterly")
+  write_and_select(yearly, "yearly")
+  write_and_select(by_fluseason, "fluseason")
+  write_and_select(by_midyear, "midyear")
 }

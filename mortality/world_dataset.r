@@ -13,7 +13,6 @@ source("mortality/can/mortality_states.r")
 source("mortality/deu/mortality_states.r")
 
 # Load Data
-baseline_size <- read_remote("mortality/world_baseline.csv")
 asmr_types <- c("asmr_who", "asmr_esp", "asmr_usa", "asmr_country")
 
 data <- rbind(
@@ -77,6 +76,7 @@ process_country <- function(df) {
   # Make furr pull in these functions
   fluseason <- fluseason
   midyear <- midyear
+  yearweek <- yearweek
   dd <- df |>
     expand_daily() |>
     mutate(cmr = deaths / population * 100000)
