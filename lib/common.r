@@ -203,10 +203,23 @@ midyear <- function(data) {
 }
 
 read_remote <- function(path) {
-  as_tibble(read.csv(paste0(
+  url <- paste0(
     "https://s3.mortality.watch/data/", path,
     "?cachebust=", as.numeric(Sys.time())
-  )))
+  )
+  message("Reading remote file: ", url)
+  tryCatch(
+    {
+      response <- GET(url)
+      stop_for_status(response)
+      content <- content(response, "text")
+      read_csv(content, show_col_types = FALSE)
+    },
+    error = function(e) {
+      message("Error reading: ", url)
+      stop(e)
+    }
+  )
 }
 
 read_remote_zip <- function(path) {
