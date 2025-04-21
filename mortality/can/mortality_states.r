@@ -24,7 +24,7 @@ map_iso3c <- function(iso3c) {
 # yearly 5y age groups, 0-90+
 deaths_year <- read_zip(
   url = "https://www150.statcan.gc.ca/n1/tbl/csv/13100709-eng.zip",
-  file_name = "13100709.csv", delim = ","
+  file_name = "13100709.csv", delim = ",", extra = "-k"
 ) |>
   filter(Sex == "Both sexes") |>
   select(GEO, REF_DATE, `Age at time of death`, VALUE) |>
@@ -54,7 +54,7 @@ deaths_year <- read_zip(
 # weekly deaths, 4 age groups
 deaths_week <- read_zip(
   url = "https://www150.statcan.gc.ca/n1/tbl/csv/13100768-eng.zip",
-  file_name = "13100768.csv", delim = ","
+  file_name = "13100768.csv", delim = ",", extra = "-k"
 ) |>
   filter(Sex == "Both sexes") |>
   select(GEO, REF_DATE, `Age at time of death`, VALUE) |>
@@ -76,7 +76,7 @@ deaths_week <- read_zip(
 
 pop_year <- read_zip(
   url = "https://www150.statcan.gc.ca/n1/tbl/csv/17100005-eng.zip",
-  file_name = "17100005.csv", delim = ","
+  file_name = "17100005.csv", delim = ",", extra = "-k"
 ) |>
   filter(Gender == "Total - gender") |>
   select(GEO, REF_DATE, `Age group`, VALUE) |>

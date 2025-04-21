@@ -736,13 +736,13 @@ retry_download <- function(url, dir, retry = 3) {
   }
 }
 
-read_zip <- function(url, file_name, delim = ";", skip = 0) {
+read_zip <- function(url, file_name, delim = ";", skip = 0, extra = NULL) {
   temp <- tempfile(fileext = ".zip")
-  on.exit(unlink(temp))
+  on.exit(unlink(temp), add = TRUE)
 
-  download.file(url, temp, quiet = TRUE)
+  download.file(url, temp, method = "curl", extra = extra)
 
-  read_delim(
+  readr::read_delim(
     unz(temp, file_name),
     delim = delim,
     skip = skip
