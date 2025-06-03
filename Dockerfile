@@ -10,7 +10,7 @@ WORKDIR /build/cronicle-edge
 RUN chmod +x bundle && ./bundle /dist --s3 --tools
 
 # Stage 2: Final Image Based on R2U for R Dependencies
-FROM eddelbuettel/r2u:22.04
+FROM eddelbuettel/r2u:24.04
 
 WORKDIR /opt/cronicle
 
@@ -62,6 +62,7 @@ minio-binaries/mc alias set minio http://s3-gate.mortality.watch \
 minio $S3_SECRET
 
 # Install R dependencies
+RUN apt-get update && apt-get install -y r-base r-base-dev
 COPY dependencies_r.txt install_r_deps.sh .
 RUN chmod +x install_r_deps.sh && ./install_r_deps.sh
 
