@@ -26,13 +26,6 @@ urls <- list(
   ),
   c(
     paste0(
-      "https://www2.census.gov/programs-surveys/popest/datasets/",
-      "2020-2022/state/asrh/sc-est2022-agesex-civ.csv"
-    ),
-    "population_usa_2020-2022.csv"
-  ),
-  c(
-    paste0(
       "https://www2.census.gov/programs-surveys/popest/datasets/2000-2010/",
       "intercensal/county/co-est00int-agesex-5yr.csv"
     ),
@@ -44,13 +37,6 @@ urls <- list(
       "2010-2020/counties/asrh/CC-EST2020-ALLDATA-36.csv"
     ),
     "population_usa_county_2010-2020.csv"
-  ),
-  c(
-    paste0(
-      "https://www2.census.gov/programs-surveys/popest/datasets/2020-2022/",
-      "counties/asrh/cc-est2022-alldata-36.csv"
-    ),
-    "population_usa_county_2020-2022.csv"
   ),
   c(
     paste0(

@@ -10,7 +10,6 @@ Sample usage:
 ```
 ./install_r_deps.sh
 Rscript update_datasets.r
-Rscript population/world.r
 ```
 
 See https://www.mortality.watch/ for the frontend.
