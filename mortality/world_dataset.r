@@ -4,6 +4,9 @@ source("lib/parallel.r")
 
 source("mortality/world_dataset_functions.r")
 
+asmr_types <- c("asmr_who", "asmr_esp", "asmr_usa", "asmr_country")
+
+# Load Data
 source("mortality/_collection/un.r")
 source("mortality/_collection/mortality_org.r")
 source("mortality/_collection/world_mortality.r")
@@ -11,9 +14,6 @@ source("mortality/_collection/eurostat.r")
 source("mortality/usa/mortality_states.r")
 source("mortality/can/mortality_states.r")
 source("mortality/deu/mortality_states.r")
-
-# Load Data
-asmr_types <- c("asmr_who", "asmr_esp", "asmr_usa", "asmr_country")
 
 data <- rbind(
   deu_mortality_states,
@@ -41,9 +41,11 @@ priority_weekly <- c(3, 2, 1) # Prefer 3, then 2, then 1
 priority_monthly <- c(2, 3, 1) # Prefer 2, then 3, then 1
 priority_yearly <- c(1, 2, 3) # Prefer 1, then 2, then 3
 priority_dataset <- c(
-  "cdc", "statcan", "destatis", "world_mortality", "mortality_org", "un"
+  "cdc", "statcan", "destatis", "eurostat", "world_mortality", "mortality_org",
+  "un"
 )
 
+# Create a subset of the data for Development or Testing only.
 if (Sys.getenv("STAGE") != "") {
   data <- data |> filter(iso3c %in% c("USA", "SWE", "JPN", "DEU", "AFG"))
 }
