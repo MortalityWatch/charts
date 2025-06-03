@@ -1,4 +1,5 @@
 options(progressr.enable = TRUE)
+options(future.rng.onMisuse = "ignore")
 
 # Multithreading
 n_cores <- detectCores()
