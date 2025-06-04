@@ -13,6 +13,7 @@ RUN chmod +x bundle && ./bundle /dist --s3 --tools
 FROM eddelbuettel/r2u:24.04
 
 WORKDIR /opt/cronicle
+RUN chown -R ubuntu:ubuntu /opt/cronicle
 
 # Copy and install system dependencies
 COPY dependencies.txt .
