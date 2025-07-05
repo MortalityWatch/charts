@@ -12,21 +12,32 @@ RUN chmod +x bundle && ./bundle /dist --s3 --tools
 # Stage 2: Final Image Based on R2U for R Dependencies
 FROM eddelbuettel/r2u:24.04
 
-WORKDIR /opt/cronicle
-RUN chown -R ubuntu:ubuntu /opt/cronicle
-
-# Copy and install system dependencies
+# Install system dependencies first (as root)
 COPY dependencies.txt .
 RUN echo "Updating deps... 2/14/2025" && \ 
 apt-get update && \ 
 apt-get install -y $(cat dependencies.txt) && \ 
 rm -rf /var/lib/apt/lists/*
 
+# Install R dependencies (as root)
+RUN apt-get update && apt-get install -y r-base r-base-dev
+COPY dependencies_r.txt install_r_deps.sh .
+RUN chmod +x install_r_deps.sh && ./install_r_deps.sh
+
+# Install Node.js (as root)
+ENV NODE_VERSION="22.x"
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION} | bash -
+RUN apt-get install -y nodejs
+
+# Create cronicle directory and set ownership
+WORKDIR /opt/cronicle
+RUN chown -R ubuntu:ubuntu /opt/cronicle
+
 # Copy Cronicle from the build stage
 COPY --from=cronicle-build /dist .
 
-# Create a non-root user for Cronicle
-RUN chown -R docker:docker /opt/cronicle
+# Fix ownership after copying
+RUN chown -R ubuntu:ubuntu /opt/cronicle
 
 # Define build-time arguments
 ARG S3_SECRET
@@ -47,29 +58,26 @@ ENV PATH="/opt/cronicle/bin:/opt/cronicle/minio-binaries:${PATH}" \
   CRONICLE_Storage__AWS__credentials__secretAccessKey="${S3_SECRET}" \
   CRONICLE_Storage__AWS__credentials__accessKeyId=minio
 
-# Protect sensitive folders
-RUN mkdir -p /opt/cronicle/data /opt/cronicle/conf && chmod 0700 \ 
-/opt/cronicle/data /opt/cronicle/conf
+# Protect sensitive folders (as root, then fix ownership)
+RUN mkdir -p /opt/cronicle/data /opt/cronicle/conf && \ 
+chmod 0700 /opt/cronicle/data /opt/cronicle/conf && \ 
+chown -R ubuntu:ubuntu /opt/cronicle/data /opt/cronicle/conf
 
 # SSL configuration
 COPY openssl.cnf .
+RUN chown ubuntu:ubuntu /opt/cronicle/openssl.cnf
 ENV OPENSSL_CONF=/opt/cronicle/openssl.cnf
 
 # Install MinIO Client
 RUN mkdir -p minio-binaries && \ 
 curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc \ 
 -o minio-binaries/mc && chmod +x minio-binaries/mc && \ 
-minio-binaries/mc alias set minio http://s3-gate.mortality.watch \ 
+chown -R ubuntu:ubuntu minio-binaries
+
+# Switch to ubuntu user for MinIO setup
+USER ubuntu
+RUN minio-binaries/mc alias set minio http://s3-gate.mortality.watch \ 
 minio $S3_SECRET
-
-# Install R dependencies
-RUN apt-get update && apt-get install -y r-base r-base-dev
-COPY dependencies_r.txt install_r_deps.sh .
-RUN chmod +x install_r_deps.sh && ./install_r_deps.sh
-
-ENV NODE_VERSION="22.x"
-RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION} | bash -
-RUN apt-get install -y nodejs
 
 # Expose Cronicle Manager Port
 EXPOSE 3012
