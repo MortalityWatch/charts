@@ -1,37 +1,53 @@
 source("lib/common.r")
 options(warn = 1)
 
-# National
+# National, until 2020
 df1 <- read_excel(
   "./data_static/sonderauswertung-sterbefaelle-endgueltige-daten.xlsx",
   sheet = "csv-12613-02",
-  range = "D1:G99999"
+  range = "B1:G99999"
+) |> rename(
+  jurisdiction = Gebiet, year = Jahre, age_group = Alter,
+  sex = Geschlecht, week = Kalenderwoche, deaths = Sterbefaelle
 )
 df2 <- read_excel(
   "./data/sonderauswertung-sterbefaelle.xlsx",
-  sheet = "csv-12613-02",
-  range = "D1:G99999"
-)
+  sheet = "csv-12613-01",
+  range = "B1:G99999"
+) |>
+  rename(
+    jurisdiction = Gebiet, year = Jahr, age_group = Alter,
+    sex = Geschlecht, week = Kalenderwoche, deaths = Sterbefaelle
+  )
 
 result1 <- rbind(df1, df2) |>
-  setNames(c("year", "age_group", "week", "deaths")) |>
-  mutate(jurisdiction = "Deutschland") |>
-  select(jurisdiction, year, week, age_group, deaths)
+  mutate(deaths = as.integer(deaths)) |>
+  filter(sex == "Insgesamt", !is.na(deaths)) |>
+  select(-sex)
+
 
 # States
 df1 <- read_excel(
   "./data_static/sonderauswertung-sterbefaelle-endgueltige-daten.xlsx",
   sheet = "csv-12613-09",
   range = "B1:G99999"
+) |> rename(
+  jurisdiction = Gebiet, year = Jahre, age_group = Alter,
+  sex = Geschlecht, week = Kalenderwoche, deaths = Sterbefaelle
 )
 df2 <- read_excel(
   "./data/sonderauswertung-sterbefaelle.xlsx",
-  sheet = "csv-12613-09",
+  sheet = "csv-12613-08",
   range = "B1:G99999"
+) |> rename(
+  jurisdiction = Gebiet, year = Jahr, age_group = Alter,
+  sex = Geschlecht, week = Kalenderwoche, deaths = Sterbefaelle
 )
+
 result2 <- rbind(df1, df2) |>
-  setNames(c("jurisdiction", "sex", "year", "age_group", "week", "deaths")) |>
-  select(jurisdiction, year, week, age_group, deaths)
+  mutate(deaths = as.integer(deaths)) |>
+  filter(sex == "Insgesamt", !is.na(deaths)) |>
+  select(-sex)
 
 df <- rbind(result1, result2) |>
   mutate(
@@ -41,7 +57,8 @@ df <- rbind(result1, result2) |>
   ) |>
   filter(!is.na(deaths)) |>
   arrange(year, jurisdiction, age_group, week) |>
-  distinct(jurisdiction, year, week, age_group, .keep_all = TRUE)
+  distinct(jurisdiction, year, week, age_group, .keep_all = TRUE) |>
+  mutate(age_group = ifelse(age_group == "Insgesamt", "all", age_group))
 
 date <- now() %m-% weeks(2)
 y <- year(date)
