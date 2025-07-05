@@ -11,9 +11,8 @@ RUN chmod +x bundle && ./bundle /dist --s3 --tools
 
 # Stage 2: Final Image Based on R2U for R Dependencies
 FROM eddelbuettel/r2u:24.04
-
+USER root
 WORKDIR /opt/cronicle
-RUN chown -R ubuntu:ubuntu /opt/cronicle
 
 # Copy and install system dependencies
 COPY dependencies.txt .
@@ -24,9 +23,6 @@ rm -rf /var/lib/apt/lists/*
 
 # Copy Cronicle from the build stage
 COPY --from=cronicle-build /dist .
-
-# Create a non-root user for Cronicle
-RUN chown -R docker:docker /opt/cronicle
 
 # Define build-time arguments
 ARG S3_SECRET
