@@ -57,8 +57,7 @@ df <- rbind(result1, result2) |>
   ) |>
   filter(!is.na(deaths)) |>
   arrange(year, jurisdiction, age_group, week) |>
-  distinct(jurisdiction, year, week, age_group, .keep_all = TRUE) |>
-  mutate(age_group = ifelse(age_group == "Insgesamt", "all", age_group))
+  distinct(jurisdiction, year, week, age_group, .keep_all = TRUE)
 
 date <- now() %m-% weeks(2)
 y <- year(date)
