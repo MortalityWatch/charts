@@ -12,7 +12,10 @@ urls <- list(
     "sonderauswertung-sterbefaelle.xlsx"
   ),
   c(
-    "https://covid.ourworldindata.org/data/owid-covid-data.csv",
+    paste0(
+      "https://catalog.ourworldindata.org/garden/covid/latest/compact/",
+      "compact.csv"
+    ),
     "owid.csv"
   ),
   c(
