@@ -35,3 +35,4 @@ tsibble
 TTR
 xml2
 magick
+pdftools
