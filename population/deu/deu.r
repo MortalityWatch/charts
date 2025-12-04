@@ -21,29 +21,29 @@ pop <- pop_raw |>
 pop$jurisdiction <- "Deutschland"
 pop <- pop |> relocate(jurisdiction, year, age_group, population)
 
-# Genesis 12411-0012: Bevölkerung: Bundesländer, Stichtag, Altersjahre
-pop_raw <- fetch_genesis_data(
-  "https://apify.mortality.watch/destatis-genesis/12411-0012.csv.gz", 5, -4
-)
-pop_states <- pop_raw |>
-  pivot_longer(
-    cols = 3:ncol(pop_raw),
-    names_to = "jurisdiction",
-    values_to = "population"
+# Genesis 12411-0012: Bevölkerung: Bundesländer, Stichtag, Altersjahre (flat)
+pop_states <- read_delim(
+  "https://apify.mortality.watch/destatis-genesis/12411-0012.csv.gz?flat=1",
+  delim = ";",
+  locale = locale(encoding = "utf8"),
+  col_types = cols(.default = "c")
+) |>
+  select(
+    year = time,
+    jurisdiction = `1_variable_attribute_label`,
+    age_group = `2_variable_attribute_label`,
+    population = value
   ) |>
-  setNames(c("year", "age_group", "jurisdiction", "population")) |>
-  fill(year) |>
-  parse_age_groups() |>
   mutate(
-    year = as.integer(right(year, 4)),
+    year = as.integer(substr(year, 1, 4)),
     population = suppress_warnings(
       as.integer(population),
       "NAs introduced by coercion"
     )
   ) |>
+  parse_age_groups() |>
   relocate(jurisdiction, year, age_group, population) |>
-  filter(!is.na(jurisdiction), !is.na(year), !is.na(age_group))
-rm(pop_raw)
+  filter(!is.na(jurisdiction), !is.na(year), !is.na(age_group), !is.na(population))
 
 pop2 <- pop |>
   mutate(
