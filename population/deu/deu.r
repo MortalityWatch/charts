@@ -25,7 +25,7 @@ pop <- pop |> relocate(jurisdiction, year, age_group, population)
 pop_states <- read_delim(
   "https://apify.mortality.watch/destatis-genesis/12411-0012.csv.gz?flat=1",
   delim = ";",
-  locale = locale(encoding = "utf8"),
+  locale = locale(encoding = "UTF-8"),
   col_types = cols(.default = "c")
 ) |>
   select(
