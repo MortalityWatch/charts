@@ -40,7 +40,7 @@ COPY --from=cronicle-build /dist .
 RUN chown -R ubuntu:ubuntu /opt/cronicle
 
 # Define build-time arguments
-ARG S3_SECRET
+ARG AWS_SECRET_ACCESS_KEY
 
 # Set environment variables for Cronicle
 ENV PATH="/opt/cronicle/bin:/opt/cronicle/minio-binaries:${PATH}" \
@@ -55,7 +55,7 @@ ENV PATH="/opt/cronicle/bin:/opt/cronicle/minio-binaries:${PATH}" \
   CRONICLE_Storage__AWS__endpoint=http://s3-gate.mortality.watch \
   CRONICLE_Storage__AWS__forcePathStyle=true \
   CRONICLE_Storage__AWS__region=us-east-1 \
-  CRONICLE_Storage__AWS__credentials__secretAccessKey="${S3_SECRET}" \
+  CRONICLE_Storage__AWS__credentials__secretAccessKey="${AWS_SECRET_ACCESS_KEY}" \
   CRONICLE_Storage__AWS__credentials__accessKeyId=minio
 
 # Protect sensitive folders (as root, then fix ownership)
@@ -77,7 +77,7 @@ chown -R ubuntu:ubuntu minio-binaries
 # Switch to ubuntu user for MinIO setup
 USER ubuntu
 RUN minio-binaries/mc alias set minio http://s3-gate.mortality.watch \ 
-minio $S3_SECRET
+minio $AWS_SECRET_ACCESS_KEY
 
 # Expose Cronicle Manager Port
 EXPOSE 3012
