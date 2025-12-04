@@ -23,7 +23,7 @@ pop <- pop |> relocate(jurisdiction, year, age_group, population)
 
 # Genesis 12411-0012: Bevölkerung: Bundesländer, Stichtag, Altersjahre (flat)
 pop_states <- read_delim(
-  "https://apify.mortality.watch/destatis-genesis/12411-0012.csv.gz?flat=1",
+  "https://apify.mortality.watch/destatis-genesis/12411-0012.csv?flat=1",
   delim = ";",
   locale = locale(encoding = "UTF-8"),
   col_types = cols(.default = "c")
