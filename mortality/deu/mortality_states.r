@@ -40,11 +40,15 @@ deaths_raw <- fetch_genesis_data(
 )
 
 # Process data
+# Find both-sexes section: between blank Insgesamt separator and final Insgesamt total
+# Data structure: column 1 has age labels, columns 2+ have year data
+insgesamt_rows <- which(str_detect(deaths_raw[[1]], "Insgesamt"))
+# Row indices: male total, female total, blank separator, both-sexes total
+# We want rows between the 3rd (blank separator) and 4th (both-sexes total), inclusive of total
 df_year <- deaths_raw %>%
-  filter(row_number() >= which(str_detect(.[[1]], "Insgesamt"))[1]) %>%
-  select(-1) %>%
-  pivot_longer(cols = -1, names_to = "date", values_to = "deaths") |>
-  setNames(c("age_group", "date", "deaths")) |>
+  filter(row_number() > insgesamt_rows[3] & row_number() <= insgesamt_rows[4]) %>%
+  rename(age_group = 1) %>%
+  pivot_longer(cols = -age_group, names_to = "date", values_to = "deaths") |>
   parse_age_groups() |>
   mutate(
     age_group = case_when(
