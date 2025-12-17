@@ -7,10 +7,18 @@ options(scipen = 999) # Disable scientific number notation
 upload_files <- TRUE
 
 libs <- read.table("dependencies_r.txt")
+# Optional packages that may fail due to system library issues (e.g., GDAL)
+optional_packages <- c("sf", "tigris")
 for (lib in libs$V1) {
   tryCatch(
     library(lib, character.only = TRUE, quietly = TRUE),
-    error = function(e) message(paste("Note: Package", lib, "could not be loaded"))
+    error = function(e) {
+      if (lib %in% optional_packages) {
+        message(paste("Note: Optional package", lib, "could not be loaded"))
+      } else {
+        warning(paste("Package", lib, "failed to load:", e$message), call. = FALSE)
+      }
+    }
   )
 }
 

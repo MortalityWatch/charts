@@ -66,7 +66,9 @@ chiang_life_table <- function(nMx, ages, AgeInt, sex = "t") {
   # Estimate nax (average years lived in interval by those who die)
   nax <- estimate_nax(nMx, ages, AgeInt, sex)
 
-  # Replace NA interval width for open-ended group
+  # Replace NA interval width for open-ended group (terminal age only)
+  # In standard life tables, only the last age group is open-ended (e.g., "85+")
+  # We use Keyfitz approximation: n = 1/Mx for the terminal interval
   n <- AgeInt
   n[is.na(n)] <- 1 / nMx[n_ages] # Use 1/Mx for open interval (Keyfitz)
   n[is.na(n) | is.infinite(n)] <- 25 # Fallback if Mx is 0
@@ -122,10 +124,12 @@ chiang_life_table <- function(nMx, ages, AgeInt, sex = "t") {
 
 #' Calculate life expectancy at birth (e0) from age-stratified mortality data
 #'
-#' @param df Data frame with age_group, deaths, population columns
+#' @param df Data frame with age_group, deaths, population columns.
+#'   Deaths should be daily counts (annual deaths / 365) when annualize=TRUE.
 #' @param sex Character: "m", "f", or "t" (default: "t")
-#' @param annualize Logical: if TRUE, multiply mortality rates by 365 to
-#'   convert daily rates to annual rates (default: TRUE for daily data)
+#' @param annualize Logical: if TRUE (default), multiply mortality rates by 365
+#'   to convert daily rates to annual rates for life table calculation.
+#'   Set to FALSE if input data already has annual death counts.
 #' @return Numeric: life expectancy at birth (e0)
 calculate_e0 <- function(df, sex = "t", annualize = TRUE) {
   # Need at least some data
@@ -186,6 +190,8 @@ calculate_e0 <- function(df, sex = "t", annualize = TRUE) {
 #'
 #' @param age_groups Character vector of age group labels
 #' @return List with ages and intervals vectors, or NULL if parsing fails
+#' @note Input should be pre-filtered to exclude "all" and NA age groups.
+#'   If these are present, the function returns NULL.
 parse_age_groups_for_le <- function(age_groups) {
   ages <- numeric(length(age_groups))
   intervals <- numeric(length(age_groups))
@@ -193,8 +199,8 @@ parse_age_groups_for_le <- function(age_groups) {
   for (i in seq_along(age_groups)) {
     ag <- age_groups[i]
 
-    # Handle "all" or invalid
-    if (ag == "all" || is.na(ag)) {
+    # Reject "all" or NA - caller should filter these out first
+    if (is.na(ag) || ag == "all") {
       return(NULL)
     }
 
@@ -234,8 +240,10 @@ parse_age_groups_for_le <- function(age_groups) {
 #' This function calculates ex (remaining life expectancy) at each age
 #' from age-stratified data. Used with group_modify().
 #'
-#' @param df Data frame with age_group, deaths, population columns
-#' @param annualize Logical: if TRUE, multiply mortality rates by 365
+#' @param df Data frame with age_group, deaths, population columns.
+#'   Deaths should be daily counts (annual deaths / 365) when annualize=TRUE.
+#' @param annualize Logical: if TRUE (default), multiply mortality rates by 365
+#'   to convert daily rates to annual rates. Set to FALSE for annual data.
 #' @return Data frame with age_group and le columns
 calculate_le_all_ages <- function(df, annualize = TRUE) {
   # Need at least some data
