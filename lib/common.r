@@ -7,8 +7,19 @@ options(scipen = 999) # Disable scientific number notation
 upload_files <- TRUE
 
 libs <- read.table("dependencies_r.txt")
+# sf/tigris may fail due to GDAL library issues - they're optional for most pipelines
+optional_packages <- c("sf", "tigris")
 for (lib in libs$V1) {
-  library(lib, character.only = TRUE, quietly = TRUE)
+  tryCatch(
+    library(lib, character.only = TRUE, quietly = TRUE),
+    error = function(e) {
+      if (lib %in% optional_packages) {
+        message(paste("Note: Optional package", lib, "not loaded"))
+      } else {
+        stop(e)
+      }
+    }
+  )
 }
 
 sf <- 2
