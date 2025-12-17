@@ -179,7 +179,7 @@ calculate_e0 <- function(df, sex = "t", annualize = TRUE) {
 
   # Return e0 (life expectancy at birth)
   e0 <- lt$ex[1]
-  if (is.na(e0) || is.nan(e0) || is.infinite(e0) || e0 <= 0 || e0 > 150) {
+  if (is.na(e0) || is.nan(e0) || is.infinite(e0) || e0 <= 0 || e0 > 120) {
     return(NA_real_)
   }
 
@@ -282,7 +282,6 @@ calculate_le_all_ages <- function(df, annualize = TRUE) {
   age_groups_sorted <- df$age_group[ord]
 
   # Build life table
-
   lt <- tryCatch(
     chiang_life_table(nMx, ages, AgeInt, "t"),
     error = function(e) NULL
@@ -294,26 +293,10 @@ calculate_le_all_ages <- function(df, annualize = TRUE) {
 
   # Return ex for all ages
   ex <- lt$ex
-  ex[is.na(ex) | is.nan(ex) | is.infinite(ex) | ex <= 0 | ex > 150] <- NA_real_
+  ex[is.na(ex) | is.nan(ex) | is.infinite(ex) | ex <= 0 | ex > 120] <- NA_real_
 
   tibble(
     age_group = age_groups_sorted,
     le = round(ex, 2)
   )
-}
-
-#' Calculate life expectancy (e0 only) from grouped mortality data
-#'
-#' This function calculates e0 from age-stratified data for a single
-#' iso3c/date combination. Used with group_modify().
-#'
-#' @param df Data frame with age_group, deaths, population columns
-#' @return Data frame with single le column (e0)
-calculate_le <- function(df) {
-  result <- calculate_le_all_ages(df)
-  if (nrow(result) == 0) {
-    return(tibble(le = NA_real_))
-  }
-  # Return e0 (first row is youngest age group)
-  tibble(le = result$le[1])
 }

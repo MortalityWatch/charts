@@ -101,8 +101,9 @@ process_country <- function(df) {
       group_modify(~ calculate_le_all_ages(.x), .keep = TRUE) |>
       ungroup()
 
-    # Extract e0 for "all" age group (first/youngest age)
+    # Extract e0 for "all" age group (must start at age 0)
     dd_le_e0 <- dd_le_all |>
+      filter(grepl("^0", age_group)) |>
       group_by(iso3c, date, type, source) |>
       slice(1) |>
       ungroup() |>
