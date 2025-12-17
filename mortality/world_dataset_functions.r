@@ -30,27 +30,65 @@ aggregate_data <- function(data, type) {
     "midyear" = filter_by_complete_temp_values(data, type, 365)
   )
   if ("cmr" %in% names(data)) {
-    result <- result |>
-      summarise(
-        deaths = round(sum_if_not_empty(deaths)),
-        population = round(mean(.data$population)),
-        cmr = round(sum_if_not_empty(.data$cmr), digits = 1),
-        type = toString(unique(.data$type)),
-        source = toString(unique(.data$source)),
-        .groups = "drop"
-      )
+    has_le <- "le" %in% names(data)
+    if (has_le) {
+      result <- result |>
+        summarise(
+          deaths = round(sum_if_not_empty(deaths)),
+          population = round(mean(.data$population)),
+          cmr = round(sum_if_not_empty(.data$cmr), digits = 1),
+          le = round(mean(.data$le, na.rm = TRUE), 2),
+          type = toString(unique(.data$type)),
+          source = toString(unique(.data$source)),
+          .groups = "drop"
+        )
+      # Remove le column if all NA or NaN
+      if (all(is.na(result$le) | is.nan(result$le))) {
+        result <- result |> select(-le)
+      }
+    } else {
+      result <- result |>
+        summarise(
+          deaths = round(sum_if_not_empty(deaths)),
+          population = round(mean(.data$population)),
+          cmr = round(sum_if_not_empty(.data$cmr), digits = 1),
+          type = toString(unique(.data$type)),
+          source = toString(unique(.data$source)),
+          .groups = "drop"
+        )
+    }
   }
 
   if ("asmr_who" %in% names(data)) {
-    result <- result |>
-      summarise(
-        asmr_who = round(sum_if_not_empty(.data$asmr_who), digits = 1),
-        asmr_esp = round(sum_if_not_empty(.data$asmr_esp), digits = 1),
-        asmr_usa = round(sum_if_not_empty(.data$asmr_usa), digits = 1),
-        asmr_country = round(sum_if_not_empty(.data$asmr_country), digits = 1),
-        source_asmr = toString(unique(.data$source)),
-        .groups = "drop"
-      )
+    # For ASMR: sum daily rates to get period rate
+    # For LE: take mean since it's a point-in-time measure
+    has_le <- "le" %in% names(data)
+    if (has_le) {
+      result <- result |>
+        summarise(
+          asmr_who = round(sum_if_not_empty(.data$asmr_who), digits = 1),
+          asmr_esp = round(sum_if_not_empty(.data$asmr_esp), digits = 1),
+          asmr_usa = round(sum_if_not_empty(.data$asmr_usa), digits = 1),
+          asmr_country = round(sum_if_not_empty(.data$asmr_country), digits = 1),
+          le = round(mean(.data$le, na.rm = TRUE), 2),
+          source_asmr = toString(unique(.data$source)),
+          .groups = "drop"
+        )
+      # Remove le column if all NA or NaN
+      if (all(is.na(result$le) | is.nan(result$le))) {
+        result <- result |> select(-le)
+      }
+    } else {
+      result <- result |>
+        summarise(
+          asmr_who = round(sum_if_not_empty(.data$asmr_who), digits = 1),
+          asmr_esp = round(sum_if_not_empty(.data$asmr_esp), digits = 1),
+          asmr_usa = round(sum_if_not_empty(.data$asmr_usa), digits = 1),
+          asmr_country = round(sum_if_not_empty(.data$asmr_country), digits = 1),
+          source_asmr = toString(unique(.data$source)),
+          .groups = "drop"
+        )
+    }
   }
   result |>
     dplyr::rename("date" = all_of(type)) |>
