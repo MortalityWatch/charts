@@ -169,11 +169,74 @@ summarize_data_all <- function(dd_all, dd_asmr, type) {
 
 summarize_data_by_time <- function(df, type) {
   fun <- get(type)
-  df |>
+  result <- df |>
     mutate(!!type := fun(date), .after = date) |>
     group_by(.data$iso3c, .data$age_group) |>
     group_modify(~ aggregate_data(.x, type), .keep = TRUE) |>
     ungroup()
+
+  # Apply STL smoothing to LE for sub-yearly data
+  if ("le" %in% names(result) && type %in% c("yearweek", "yearmonth", "yearquarter")) {
+    result <- result |>
+      group_by(.data$iso3c, .data$age_group) |>
+      group_modify(~ smooth_le_stl(.x, type) |> select(-any_of(c("iso3c", "age_group"))), .keep = TRUE) |>
+      ungroup()
+  }
+
+  result
+}
+
+#' Apply STL decomposition to smooth life expectancy for sub-yearly data
+#'
+#' @param df Data frame with date and le columns
+#' @param type Period type: yearweek, yearmonth, yearquarter
+#' @return Data frame with le replaced by STL trend
+smooth_le_stl <- function(df, type) {
+  if (!"le" %in% names(df) || all(is.na(df$le))) {
+    return(df)
+  }
+
+  # Determine frequency for STL
+  freq <- switch(type,
+    "yearweek" = 52,
+    "yearmonth" = 12,
+    "yearquarter" = 4,
+    1
+  )
+
+  # Need at least 2 full cycles for STL
+  min_periods <- freq * 2
+  le_values <- df$le
+  n_valid <- sum(!is.na(le_values))
+
+  if (n_valid < min_periods) {
+    return(df)
+  }
+
+  # Interpolate NAs for STL (it doesn't handle them)
+  le_clean <- zoo::na.approx(le_values, na.rm = FALSE)
+  le_clean <- zoo::na.locf(zoo::na.locf(le_clean, na.rm = FALSE), fromLast = TRUE, na.rm = FALSE)
+
+  if (any(is.na(le_clean))) {
+    return(df)
+  }
+
+  # Apply STL
+  le_ts <- ts(le_clean, frequency = freq)
+  stl_result <- tryCatch(
+    stl(le_ts, s.window = "periodic"),
+    error = function(e) NULL
+  )
+
+  if (is.null(stl_result)) {
+    return(df)
+  }
+
+  # Replace le with trend component
+  trend <- as.numeric(stl_result$time.series[, "trend"])
+  df$le <- round(trend, 2)
+
+  df
 }
 
 fill_gaps_na <- function(df) {

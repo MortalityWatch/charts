@@ -8,7 +8,10 @@ upload_files <- TRUE
 
 libs <- read.table("dependencies_r.txt")
 for (lib in libs$V1) {
-  library(lib, character.only = TRUE, quietly = TRUE)
+  tryCatch(
+    library(lib, character.only = TRUE, quietly = TRUE),
+    error = function(e) message(paste("Note: Package", lib, "could not be loaded"))
+  )
 }
 
 sf <- 2
