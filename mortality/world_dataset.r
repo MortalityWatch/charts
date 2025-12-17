@@ -1,5 +1,6 @@
 source("lib/common.r")
 source("lib/asmr.r")
+source("lib/life_expectancy.r")
 source("lib/parallel.r")
 
 source("mortality/world_dataset_functions.r")
@@ -86,12 +87,38 @@ process_country <- function(df) {
   dd_all <- dd |> filter(age_group == "all")
   dd_age <- dd |> filter(age_group != "all")
   dd_asmr <- dd_age
+  dd_le_all <- tibble()
   if (nrow(dd_age)) {
     dd_asmr <- dd_age |>
       group_by(iso3c, type, n_age_groups, source) |>
       group_modify(~ calculate_asmr_variants(.x), .keep = TRUE) |>
       ungroup()
     dd_asmr$age_group <- "all"
+
+    # Calculate life expectancy for ALL ages from age-stratified data
+    dd_le_all <- dd_age |>
+      group_by(iso3c, date, type, n_age_groups, source) |>
+      group_modify(~ calculate_le_all_ages(.x), .keep = TRUE) |>
+      ungroup()
+
+    # Extract e0 for "all" age group (must start at age 0)
+    dd_le_e0 <- dd_le_all |>
+      filter(grepl("^0", age_group)) |>
+      group_by(iso3c, date, type, source) |>
+      slice(1) |>
+      ungroup() |>
+      select(iso3c, date, type, source, le)
+
+    # Merge e0 into ASMR data (for "all" age group output)
+    dd_asmr <- dd_asmr |>
+      left_join(dd_le_e0, by = c("iso3c", "date", "type", "source"))
+
+    # Merge LE into age-specific data (for individual age group outputs)
+    dd_age <- dd_age |>
+      left_join(
+        dd_le_all |> select(iso3c, date, type, source, age_group, le),
+        by = c("iso3c", "date", "type", "source", "age_group")
+      )
   }
 
   # Apply filtering to both datasets
