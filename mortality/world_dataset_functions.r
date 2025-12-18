@@ -183,11 +183,11 @@ summarize_data_by_time <- function(df, type) {
   result
 }
 
-#' Apply STL decomposition to smooth life expectancy for sub-yearly data
+#' Apply STL decomposition to create seasonally adjusted life expectancy
 #'
 #' @param df Data frame with date and le columns
 #' @param type Period type: yearweek, yearmonth, yearquarter
-#' @return Data frame with le replaced by STL trend
+#' @return Data frame with le (raw) and le_adj (seasonally adjusted = trend + residual)
 smooth_le_stl <- function(df, type) {
   if (!"le" %in% names(df) || all(is.na(df$le))) {
     return(df)
@@ -229,9 +229,10 @@ smooth_le_stl <- function(df, type) {
     return(df)
   }
 
-  # Replace le with trend component
+  # Seasonally adjusted = trend + residual (removes seasonal artifact only)
   trend <- as.numeric(stl_result$time.series[, "trend"])
-  df$le <- round(trend, 2)
+  residual <- as.numeric(stl_result$time.series[, "remainder"])
+  df$le_adj <- round(trend + residual, 2)
 
   df
 }
