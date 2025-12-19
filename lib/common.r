@@ -751,6 +751,8 @@ read_zip <- function(url, file_name, delim = ";", skip = 0, extra = NULL) {
   temp <- tempfile(fileext = ".zip")
   on.exit(unlink(temp), add = TRUE)
 
+  # Add timeout and retry for resilience to transient network issues
+  extra <- paste(extra, "--max-time 120 --retry 3 --retry-delay 5")
   download.file(url, temp, method = "curl", extra = extra)
 
   readr::read_delim(
