@@ -132,13 +132,31 @@ df_1999 <- df <- bind_rows(usa, all, age) |>
 df_1999_10y <- df_1999 |> summarize_age_groups_10y()
 df_1999_20y <- df_1999_10y |> summarize_age_groups_20y()
 
-# 2000-2024
-data0 <- as_tibble(read.csv("./data_static/population_usa_2000-2010.csv"))
-data1 <- as_tibble(read.csv("./data_static/population_usa_2010-2020.csv"))
-data2 <- as_tibble(read.csv(paste0(
+# 2000-2024 Intercensal estimates (resident population, adjusted for census)
+data0 <- as_tibble(read.csv(paste0(
   "https://www2.census.gov/programs-surveys/popest/datasets/",
-  "2020-2024/state/asrh/sc-est2024-agesex-civ.csv"
+  "2000-2010/intercensal/state/st-est00int-agesex.csv"
 )))
+data1 <- as_tibble(read.csv(paste0(
+  "https://www2.census.gov/programs-surveys/popest/datasets/",
+  "2010-2020/intercensal/state/asrh/sc-est2020int-alldata6.csv"
+)))
+# Auto-detect latest vintage (2024, 2025, etc.)
+get_latest_vintage <- function() {
+  for (yr in seq(year(Sys.Date()), 2024, -1)) {
+    url <- sprintf(
+      "https://www2.census.gov/programs-surveys/popest/datasets/2020-%d/state/asrh/sc-est%d-agesex-civ.csv",
+      yr, yr
+    )
+    result <- tryCatch(read.csv(url), error = function(e) NULL)
+    if (!is.null(result)) {
+      message("Using Vintage ", yr)
+      return(as_tibble(result))
+    }
+  }
+  stop("No vintage data found")
+}
+data2 <- get_latest_vintage()
 
 # Transform data
 a <- data0 |>
@@ -156,55 +174,50 @@ a <- data0 |>
   transform(year = right(year, 4)) |>
   setNames(c("jurisdiction", "age", "year", "population"))
 
+# Aggregate intercensal data across race categories (ORIGIN=0 is total origin)
+# Note: 2010-2020 intercensal has state-only data, need to compute national totals
 b <- data1 |>
-  filter(SEX == 0) |>
+  filter(SEX == 0, ORIGIN == 0) |>
   select(
     NAME, AGE,
-    POPEST2010_CIV, POPEST2011_CIV, POPEST2012_CIV, POPEST2013_CIV,
-    POPEST2014_CIV, POPEST2015_CIV, POPEST2016_CIV, POPEST2017_CIV,
-    POPEST2018_CIV, POPEST2019_CIV, POPEST2020_CIV
+    POPESTIMATE2010, POPESTIMATE2011, POPESTIMATE2012, POPESTIMATE2013,
+    POPESTIMATE2014, POPESTIMATE2015, POPESTIMATE2016, POPESTIMATE2017,
+    POPESTIMATE2018, POPESTIMATE2019
   ) |>
   pivot_longer(
     cols = starts_with("POPEST"), names_to = "year", values_to = "population"
   ) |>
-  transform(year = str_sub(year, 7, 10)) |>
+  mutate(year = str_sub(year, 12, 15)) |>
+  group_by(NAME, AGE, year) |>
+  summarise(population = sum(population), .groups = "drop") |>
   setNames(c("jurisdiction", "age", "year", "population")) |>
   as_tibble()
+
+# Add national totals by aggregating states
+b_national <- b |>
+  group_by(age, year) |>
+  summarise(population = sum(population), .groups = "drop") |>
+  mutate(jurisdiction = "United States") |>
+  select(jurisdiction, age, year, population)
+b <- bind_rows(b, b_national)
+
+# Add "all ages" rows (age=999) - intercensal file doesn't have them
+b_all_ages <- b |>
+  group_by(jurisdiction, year) |>
+  summarise(population = sum(population), .groups = "drop") |>
+  mutate(age = 999L) |>
+  select(jurisdiction, age, year, population)
+b <- bind_rows(b, b_all_ages)
 
 c <- data2 |>
   filter(SEX == 0) |>
-  select(
-    NAME, AGE, POPEST2020_CIV, POPEST2021_CIV, POPEST2022_CIV, POPEST2023_CIV,
-    POPEST2024_CIV
-  ) |>
+  select(NAME, AGE, starts_with("POPEST")) |>
   pivot_longer(
     cols = starts_with("POPEST"), names_to = "year", values_to = "population"
   ) |>
-  transform(year = str_sub(year, 7, 10)) |>
-  setNames(c("jurisdiction", "age", "year", "population")) |>
+  mutate(year = str_sub(year, 7, 10)) |>
+  select(jurisdiction = NAME, age = AGE, year, population) |>
   as_tibble()
-
-# Compute the ratio of 2020 population between datasets b and c
-ratios <- b |>
-  filter(year == "2020") |>
-  inner_join(
-    c |> filter(year == "2020"),
-    by = c("jurisdiction", "age"),
-    suffix = c("_old", "_new")
-  ) |>
-  mutate(ratio = population_new / population_old) |>
-  select(jurisdiction, age, ratio)
-
-# Adjust populations for 2011–2019 based on the ratio
-b <- b |>
-  filter(year != "2020") |>
-  inner_join(ratios, by = c("jurisdiction", "age")) |>
-  mutate(
-    population = round(
-      population * (1 - (((as.numeric(year) - 2010) / 10)) * (1 - ratio))
-    )
-  ) |>
-  select(jurisdiction, age, year, population)
 
 # Create 5y age bands
 population_grouped <- tibble(bind_rows(list(a, b, c))) |>
