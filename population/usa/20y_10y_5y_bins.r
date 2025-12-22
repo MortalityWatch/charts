@@ -149,7 +149,7 @@ get_latest_vintage <- function() {
   current_year <- year(Sys.Date())
   for (yr in seq(current_year, 2024, -1)) {
     url <- sprintf(
-      "https://www2.census.gov/programs-surveys/popest/datasets/2020-%d/state/asrh/sc-est%d-agesex-civ.csv",
+      "https://www2.census.gov/programs-surveys/popest/datasets/2020-%d/state/asrh/sc-est%d-alldata6.csv",
       yr, yr
     )
     result <- tryCatch(read.csv(url), error = function(e) NULL)
@@ -218,14 +218,32 @@ b_all_ages <- b |>
 b <- bind_rows(b, b_all_ages)
 
 c <- data2 |>
-  filter(SEX == 0) |>
+  filter(SEX == 0, ORIGIN == 0) |>
   select(NAME, AGE, starts_with("POPEST")) |>
   pivot_longer(
     cols = starts_with("POPEST"), names_to = "year", values_to = "population"
   ) |>
   mutate(year = str_extract(year, "\\d{4}")) |>
+  group_by(NAME, AGE, year) |>
+  summarise(population = sum(population), .groups = "drop") |>
   select(jurisdiction = NAME, age = AGE, year, population) |>
   as_tibble()
+
+# Add national totals by aggregating states
+c_national <- c |>
+  group_by(age, year) |>
+  summarise(population = sum(population), .groups = "drop") |>
+  mutate(jurisdiction = "United States") |>
+  select(jurisdiction, age, year, population)
+c <- bind_rows(c, c_national)
+
+# Add "all ages" rows (age=999)
+c_all_ages <- c |>
+  group_by(jurisdiction, year) |>
+  summarise(population = sum(population), .groups = "drop") |>
+  mutate(age = 999L) |>
+  select(jurisdiction, age, year, population)
+c <- bind_rows(c, c_all_ages)
 
 # Create 5y age bands
 population_grouped <- tibble(bind_rows(list(a, b, c))) |>
