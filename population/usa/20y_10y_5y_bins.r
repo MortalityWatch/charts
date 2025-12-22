@@ -133,6 +133,9 @@ df_1999_10y <- df_1999 |> summarize_age_groups_10y()
 df_1999_20y <- df_1999_10y |> summarize_age_groups_20y()
 
 # 2000-2024 Intercensal estimates (resident population, adjusted for census)
+# Note: Using resident population (not civilian) because Census Bureau
+# intercensal estimates are only available as resident population.
+# Difference is ~0.3% (active-duty military).
 data0 <- as_tibble(read.csv(paste0(
   "https://www2.census.gov/programs-surveys/popest/datasets/",
   "2000-2010/intercensal/state/st-est00int-agesex.csv"
@@ -143,14 +146,19 @@ data1 <- as_tibble(read.csv(paste0(
 )))
 # Auto-detect latest vintage (2024, 2025, etc.)
 get_latest_vintage <- function() {
-  for (yr in seq(year(Sys.Date()), 2024, -1)) {
+  current_year <- year(Sys.Date())
+  for (yr in seq(current_year, 2024, -1)) {
     url <- sprintf(
       "https://www2.census.gov/programs-surveys/popest/datasets/2020-%d/state/asrh/sc-est%d-agesex-civ.csv",
       yr, yr
     )
     result <- tryCatch(read.csv(url), error = function(e) NULL)
     if (!is.null(result)) {
-      message("Using Vintage ", yr)
+      if (yr < current_year) {
+        warning("Vintage ", current_year, " not available, using Vintage ", yr)
+      } else {
+        message("Using Vintage ", yr)
+      }
       return(as_tibble(result))
     }
   }
@@ -171,7 +179,7 @@ a <- data0 |>
   pivot_longer(
     cols = starts_with("POPEST"), names_to = "year", values_to = "population"
   ) |>
-  transform(year = right(year, 4)) |>
+  mutate(year = str_extract(year, "\\d{4}")) |>
   setNames(c("jurisdiction", "age", "year", "population"))
 
 # Aggregate intercensal data across race categories (ORIGIN=0 is total origin)
@@ -187,7 +195,7 @@ b <- data1 |>
   pivot_longer(
     cols = starts_with("POPEST"), names_to = "year", values_to = "population"
   ) |>
-  mutate(year = str_sub(year, 12, 15)) |>
+  mutate(year = str_extract(year, "\\d{4}")) |>
   group_by(NAME, AGE, year) |>
   summarise(population = sum(population), .groups = "drop") |>
   setNames(c("jurisdiction", "age", "year", "population")) |>
@@ -215,7 +223,7 @@ c <- data2 |>
   pivot_longer(
     cols = starts_with("POPEST"), names_to = "year", values_to = "population"
   ) |>
-  mutate(year = str_sub(year, 7, 10)) |>
+  mutate(year = str_extract(year, "\\d{4}")) |>
   select(jurisdiction = NAME, age = AGE, year, population) |>
   as_tibble()
 
@@ -254,7 +262,10 @@ population_grouped <- rbind(df_1999, population_grouped) |>
   inner_join(us_states_iso3c, by = c("jurisdiction"))
 
 
-# Can be used again in December 2025.
+# DEPRECATED: This scaling code is no longer needed since we now:
+# 1. Auto-detect the latest vintage (get_latest_vintage function)
+# 2. Use intercensal estimates for 2000-2020 (already census-adjusted)
+# Keeping as reference in case manual scaling is ever needed.
 # # Update totals to Vintage 2024
 # vintage2024_totals <- read_csv(
 #   paste0(
