@@ -1,9 +1,49 @@
 # Life Expectancy Calculation using Chiang's Method
 # Pure R implementation for abridged life tables
+#
+# Methodology:
+# ------------
+# Life expectancy is calculated using Chiang's method for abridged life tables.
+# This is the standard demographic approach when data is available in age groups
+# rather than single years of age.
+#
+# Key Parameters:
+# - nax: Average years lived in interval by those who die. Critical for accuracy.
+#   * Infant mortality (age 0): Deaths concentrated early -> nax ≈ 0.1-0.3
+#   * Ages 1-4: Deaths more evenly distributed -> nax ≈ 1.5
+#   * Ages 5+: Approximately midpoint -> nax ≈ n/2
+#   * Open-ended (85+): Uses 1/Mx (Keyfitz approximation)
+#
+# Coale-Demeny Coefficients:
+# Empirically derived formulas that estimate nax based on mortality level.
+# Originally published by Coale & Demeny (1966), refined by Preston et al. (2001).
+#
+# Data Quality Requirements:
+# For reliable LE estimates, data should have:
+# - First age group starting at 0
+# - First age group width <= 15 years (0-4, 0-9, or 0-14)
+# - Open-ended terminal age group (80+, 85+, 90+)
+# - Complete age coverage (no gaps)
+#
+# References:
+# - Chiang, C.L. (1984). The Life Table and Its Applications
+# - Preston, S.H., Heuveline, P., & Guillot, M. (2001). Demography: Measuring
+#   and Modeling Population Processes
+# - Coale, A.J. & Demeny, P. (1966). Regional Model Life Tables and Stable
+#   Populations
+
+# Maximum width of first age group for reliable LE calculation
+# Groups broader than this (e.g., 0-24, 0-44) are too heterogeneous
+MAX_FIRST_AGE_GROUP_WIDTH <- 15
 
 #' Estimate nax (average years lived in interval by those who die)
 #'
-#' Uses Coale-Demeny for infant mortality and simplified UN method for other ages.
+#' Uses Coale-Demeny coefficients for infant/child mortality and simplified
+#' UN method for other ages. Handles various first age group widths:
+#' - 0-1 (single year): Standard Coale-Demeny
+#' - 0-4 (5 years): Extended Coale-Demeny (Preston et al. 2001)
+#' - 0-9 (10 years): Weighted approximation (~70% infant mortality)
+#' - 0-14 (15 years): Weighted approximation (~65% infant mortality)
 #'
 #' @param nMx Age-specific mortality rates
 #' @param ages Age group starts
@@ -18,20 +58,58 @@ estimate_nax <- function(nMx, ages, AgeInt, sex = "t") {
     age <- ages[i]
     n <- if (is.na(AgeInt[i])) 5 else AgeInt[i]
 
-    if (age == 0 && n == 1) {
-      # Infant mortality: Coale-Demeny coefficients
-      m0 <- nMx[1]
-      if (sex == "m") {
-        nax[i] <- if (m0 >= 0.107) 0.330 else 0.045 + 2.684 * m0
-      } else if (sex == "f") {
-        nax[i] <- if (m0 >= 0.107) 0.350 else 0.053 + 2.800 * m0
+    if (age == 0) {
+      # First age group starting at 0 - use appropriate Coale-Demeny variant
+      m0 <- nMx[i]
+
+      if (n == 1) {
+        # Standard Coale-Demeny for single-year infant (age 0)
+        nax[i] <- if (sex == "m") {
+          if (m0 >= 0.107) 0.330 else 0.045 + 2.684 * m0
+        } else if (sex == "f") {
+          if (m0 >= 0.107) 0.350 else 0.053 + 2.800 * m0
+        } else {
+          if (m0 >= 0.107) 0.340 else 0.049 + 2.742 * m0
+        }
+
+      } else if (n == 5) {
+        # Coale-Demeny for 0-4 combined (Preston et al. 2001)
+        nax[i] <- if (sex == "m") {
+          if (m0 >= 0.107) 1.651 else 0.0425 + 2.875 * m0
+        } else if (sex == "f") {
+          if (m0 >= 0.107) 1.750 else 0.0480 + 2.948 * m0
+        } else {
+          if (m0 >= 0.107) 1.700 else 0.0453 + 2.911 * m0
+        }
+
+      } else if (n == 10) {
+        # 0-9: Approximate using weighted infant concentration
+        # ~70% of deaths in 0-9 occur in age 0, ~20% in 1-4, ~10% in 5-9
+        a0 <- if (m0 * n >= 0.107) 0.34 else 0.049 + 2.742 * m0 * n
+        nax[i] <- 0.70 * a0 + 0.20 * (1 + 1.5) + 0.10 * (5 + 2.5)
+
+      } else if (n <= 15) {
+        # 0-14: Similar approach, deaths concentrated in infancy
+        # ~65% in age 0, ~20% in 1-4, ~15% in 5-14
+        a0 <- if (m0 * n >= 0.107) 0.34 else 0.049 + 2.742 * m0 * n
+        nax[i] <- 0.65 * a0 + 0.20 * (1 + 1.5) + 0.15 * (5 + 5)
+
       } else {
-        # Average of male and female
-        nax[i] <- if (m0 >= 0.107) 0.340 else 0.049 + 2.742 * m0
+        # Broader than 0-14: less reliable, weight toward younger ages
+        nax[i] <- n / 3
       }
+
     } else if (age == 1 && n == 4) {
-      # Ages 1-4: higher at beginning
-      nax[i] <- 1.5
+      # Ages 1-4: Coale-Demeny (depends on infant mortality level)
+      m0 <- nMx[1]
+      nax[i] <- if (sex == "m") {
+        if (m0 >= 0.107) 1.352 else 1.651 - 2.816 * m0
+      } else if (sex == "f") {
+        if (m0 >= 0.107) 1.361 else 1.522 - 1.518 * m0
+      } else {
+        if (m0 >= 0.107) 1.356 else 1.587 - 2.167 * m0
+      }
+
     } else if (i == n_ages) {
       # Open-ended interval: use 1/Mx if available
       if (nMx[i] > 0) {
@@ -39,6 +117,7 @@ estimate_nax <- function(nMx, ages, AgeInt, sex = "t") {
       } else {
         nax[i] <- n / 2
       }
+
     } else {
       # Standard: deaths distributed evenly through interval
       nax[i] <- n / 2
@@ -167,6 +246,11 @@ calculate_e0 <- function(df, sex = "t", annualize = TRUE) {
   AgeInt <- age_info$intervals[ord]
   nMx <- nMx[ord]
 
+  # Skip if first age group is too broad for reliable LE calculation
+  if (ages[1] == 0 && !is.na(AgeInt[1]) && AgeInt[1] > MAX_FIRST_AGE_GROUP_WIDTH) {
+    return(NA_real_)
+  }
+
   # Build life table
   lt <- tryCatch(
     chiang_life_table(nMx, ages, AgeInt, sex),
@@ -280,6 +364,12 @@ calculate_le_all_ages <- function(df, annualize = TRUE) {
   AgeInt <- age_info$intervals[ord]
   nMx <- nMx[ord]
   age_groups_sorted <- df$age_group[ord]
+
+  # Skip if first age group is too broad for reliable LE calculation
+  # (e.g., 0-24, 0-44, 0-64 from some data sources)
+  if (ages[1] == 0 && !is.na(AgeInt[1]) && AgeInt[1] > MAX_FIRST_AGE_GROUP_WIDTH) {
+    return(tibble(age_group = character(), le = numeric()))
+  }
 
   # Build life table
   lt <- tryCatch(
