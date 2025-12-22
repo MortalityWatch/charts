@@ -155,7 +155,7 @@ get_latest_vintage <- function() {
     result <- tryCatch(read.csv(url), error = function(e) NULL)
     if (!is.null(result)) {
       if (yr < current_year) {
-        warning("Vintage ", current_year, " not available, using Vintage ", yr)
+        message("Vintage ", current_year, " not available, using Vintage ", yr)
       } else {
         message("Using Vintage ", yr)
       }
