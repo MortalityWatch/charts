@@ -84,18 +84,22 @@ estimate_nax <- function(nMx, ages, AgeInt, sex = "t") {
 
       } else if (n == 10) {
         # 0-9: Approximate using weighted infant concentration
-        # ~70% of deaths in 0-9 occur in age 0, ~20% in 1-4, ~10% in 5-9
-        a0 <- if (m0 * n >= 0.107) 0.34 else 0.049 + 2.742 * m0 * n
+        # Weights are empirical approximations based on typical mortality patterns
+        # in populations where ~70% of 0-9 deaths occur in age 0
+        # Note: m0 here is group mortality rate, used as proxy for infant mortality
+        a0 <- if (m0 >= 0.107) 0.34 else 0.049 + 2.742 * m0
         nax[i] <- 0.70 * a0 + 0.20 * (1 + 1.5) + 0.10 * (5 + 2.5)
 
       } else if (n <= 15) {
         # 0-14: Similar approach, deaths concentrated in infancy
-        # ~65% in age 0, ~20% in 1-4, ~15% in 5-14
-        a0 <- if (m0 * n >= 0.107) 0.34 else 0.049 + 2.742 * m0 * n
+        # Weights are empirical approximations (~65% in age 0, ~20% in 1-4)
+        a0 <- if (m0 >= 0.107) 0.34 else 0.049 + 2.742 * m0
         nax[i] <- 0.65 * a0 + 0.20 * (1 + 1.5) + 0.15 * (5 + 5)
 
       } else {
-        # Broader than 0-14: less reliable, weight toward younger ages
+        # Broader than 0-14: fallback for direct calls to estimate_nax()
+        # Note: calculate_le_all_ages() and calculate_e0() return NA for these
+        # cases before reaching here, so this only applies to direct usage
         nax[i] <- n / 3
       }
 
